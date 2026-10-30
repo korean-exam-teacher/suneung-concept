@@ -407,6 +407,68 @@ a.flow-i:hover span{color:var(--blue-ink)}
 .ccard.done .no{background:var(--ok);color:#fff}
 .ccard.done h3::after{content:none}
 
+/* ================= 단계: 기본 · 심화 · 발전 · 도약 ================= */
+:root{--lv1:#0071e3;--lv2:#248a3d;--lv3:#c25e00;--lv4:#8944ab}
+:root[data-theme="dark"]{--lv1:#2997ff;--lv2:#30d158;--lv3:#ff9f0a;--lv4:#bf5af2}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--lv1:#2997ff;--lv2:#30d158;--lv3:#ff9f0a;--lv4:#bf5af2} }
+.lv1{--lv:var(--lv1)} .lv2{--lv:var(--lv2)} .lv3{--lv:var(--lv3)} .lv4{--lv:var(--lv4)}
+.lv{display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;letter-spacing:0;vertical-align:middle;color:var(--lv);background:color-mix(in srgb,var(--lv) 12%,transparent)}
+.lv::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--lv)}
+.band h1 .lv{font-size:.8rem;margin-left:4px;transform:translateY(-.3em)}
+.lv-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--lv);margin-right:10px;vertical-align:middle}
+.band h1 .lv-dot{width:.4em;height:.4em;transform:translateY(-.15em)}
+.sec-sub{margin:8px 0 0;color:var(--ink-3);font-size:.95rem}
+
+/* 첫 화면 계단 */
+.ladder{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:clamp(12px,1.4vw,20px);align-items:end}
+.step-card a{position:relative;display:flex;flex-direction:column;gap:6px;padding:clamp(22px,2vw,30px);border-radius:var(--r-lg);background:var(--paper);box-shadow:var(--shadow);text-decoration:none;transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s;overflow:hidden}
+.step-card a::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:var(--lv)}
+@media (min-width:900px){ .step-card:nth-child(1) a{min-height:220px} .step-card:nth-child(2) a{min-height:250px} .step-card:nth-child(3) a{min-height:280px} .step-card:nth-child(4) a{min-height:310px} }
+.step-card a:hover{transform:translateY(-4px);box-shadow:var(--shadow-hover)}
+.step-card.now a{box-shadow:0 0 0 2px var(--lv),var(--shadow-hover)}
+.step-no{font-size:2.6rem;font-weight:800;line-height:1;color:var(--lv);letter-spacing:-.04em}
+.step-card h3{margin:auto 0 0;font-size:1.5rem;font-weight:800;letter-spacing:-.03em}
+.step-card p{margin:0 0 12px;font-size:.88rem;color:var(--ink-3);line-height:1.5}
+.step-card .prog{display:flex;justify-content:space-between;font-size:.78rem;color:var(--ink-3);margin-bottom:6px;font-variant-numeric:tabular-nums}
+.step-card .bar i{background:var(--lv)}
+.now-tag{position:absolute;top:18px;right:18px;font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--lv);color:#fff}
+.now-tag.done{background:var(--ok-soft);color:var(--ok)}
+
+/* 단계 화면 */
+.stage-tabs{display:inline-flex;gap:2px;padding:3px;margin:0 0 20px;border-radius:999px;background:var(--line);flex-wrap:wrap}
+.stage-tabs a{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 14px;border-radius:999px;text-decoration:none;font-size:.85rem;font-weight:600;color:var(--ink-2);transition:background .2s,color .2s}
+.stage-tabs a b{display:grid;place-items:center;width:18px;height:18px;border-radius:50%;font-size:.68rem;background:color-mix(in srgb,var(--lv) 15%,transparent);color:var(--lv)}
+.stage-tabs a:hover{color:var(--ink)}
+.stage-tabs a.on{background:var(--paper);color:var(--lv);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.stage-tabs a.on b{background:var(--lv);color:#fff}
+.stage-prog{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:20px;max-width:640px}
+.stage-prog .bar{flex:1 1 160px}
+.stage-prog .bar i{background:var(--lv)}
+.stage-prog > span{font-size:.85rem;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.ccard .ch-name{font-size:.75rem;color:var(--ink-3);font-weight:600}
+.ccard .top-row,.ccard .no{flex:none}
+.ccard .no{margin-bottom:2px}
+.lv-filter{margin-top:20px}
+.lv-filter .lv-dot{width:7px;height:7px;margin-right:6px}
+
+/* 개념 화면: 같은 단계 다음 개념 */
+.lv-next{display:block;margin-top:12px;padding:12px 14px;border-radius:12px;text-decoration:none;background:color-mix(in srgb,var(--lv) 10%,transparent);transition:background .2s}
+.lv-next:hover{background:color-mix(in srgb,var(--lv) 18%,transparent)}
+.lv-next small{display:block;font-size:.72rem;color:var(--lv);font-weight:700}
+.lv-next span{font-size:.92rem;font-weight:600}
+.rail-card.pre{box-shadow:0 0 0 1.5px color-mix(in srgb,var(--lv1) 35%,transparent),var(--shadow)}
+.chip-c .lv{padding:1px 6px;font-size:.66rem}
+.chip-c .lv::before{display:none}
+
+/* 목차: 단계 색 점 */
+.toc-ch li a.lv1 .dot,.toc-ch li a.lv2 .dot,.toc-ch li a.lv3 .dot,.toc-ch li a.lv4 .dot{background:var(--lv);opacity:.55}
+.toc-ch li a.done .dot{background:var(--ok);opacity:1}
+
+/* 알림 */
+.toast{position:fixed;left:50%;bottom:28px;z-index:80;transform:translate(-50%,20px);max-width:min(520px,calc(100vw - 32px));padding:14px 20px;border-radius:16px;background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(24px);backdrop-filter:saturate(180%) blur(24px);box-shadow:0 12px 40px rgba(0,0,0,.2),0 0 0 1px var(--line);font-size:.92rem;opacity:0;transition:opacity .3s,transform .4s cubic-bezier(.2,.8,.2,1)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.toast a{color:var(--blue-ink);font-weight:700}
+
 /* ================= 반응형 ================= */
 @media (max-width:1359px){
   .layout{grid-template-columns:minmax(0,1fr)}

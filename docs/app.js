@@ -16,6 +16,15 @@ const STEPS = [
   {key: 'trap',  name: '함정'},
   {key: 'exam',  name: '기출'}
 ];
+/* 학습 단계: 쉬운 것부터 차례로 */
+const LEVELS = [
+  {name: '기본', desc: '용어와 뼈대를 세우는 첫 개념', how: '처음 공부할 때 여기서 시작하세요.'},
+  {name: '심화', desc: '수능에 해마다 나오는 규칙과 개념', how: '기본을 바탕으로 정확한 규칙을 익혀요.'},
+  {name: '발전', desc: '여러 개념을 엮어 자료와 지문에 적용', how: '<보기>·자료를 해석하는 힘을 길러요.'},
+  {name: '도약', desc: '고난도·통합·3점 문항 대비', how: '실전에서 가장 어려운 문항을 넘어서요.'}
+];
+const lvOf = c => Math.max(0, LEVELS.findIndex(l => l.name === c.level));
+const lvPill = c => `<span class="lv lv${lvOf(c) + 1}">${esc(LEVELS[lvOf(c)].name)}</span>`;
 const $ = s => document.querySelector(s);
 const main = $('#main'), side = $('#side'), q = $('#q'), gnav = $('#gnav');
 
@@ -41,6 +50,13 @@ BOOK.forEach(ch => {
 });
 const byId = new Map(concepts.map((c, i) => [c.id, i]));
 const pad = n => String(n).padStart(2, '0');
+const byLevel = LEVELS.map((_, n) => concepts.filter(c => lvOf(c) === n));
+/* 지금 공부할 단계: 80% 이상 마치지 않은 가장 낮은 단계 */
+function nowLevel(){
+  for(let n = 0; n < LEVELS.length; n++){ const cs = byLevel[n]; if(cs.filter(c => done[c.id]).length < cs.length * .8) return n; }
+  return LEVELS.length - 1;
+}
+const nextInLevel = c => { const cs = byLevel[lvOf(c)], i = cs.indexOf(c); return cs.find((x, j) => j > i && !done[x.id]) || cs[i + 1] || null; };
 
 /* ---------- 개념끼리 잇기: 제목에서 낱말을 뽑아 다른 개념 글 속에서 찾음 ---------- */
 const STOP = new Set(['개념','특징','방법','구성','갈래','흐름','구별','읽기','기능','관계','표현','변화','특성','원리','이해','종류','유형','심화','핵심','감상','문항','접근','적용','체계','구조','요소','전략','태도','정서','그리고','맥락','상황','의미','국어','자료','시대','작품','인물','대화','말투','갈등','주제','정보','배경','소재','공간','시간','장면','어휘','단어','문장','글쓰기','내용','과정','결과','사례','관점','견해','신뢰성','적절성','읽는 법']);
@@ -128,7 +144,7 @@ peek.className = 'peek'; peek.hidden = true; document.body.append(peek);
 let peekT;
 function showPeek(a){
   const c = concepts[byId.get(a.dataset.id)]; if(!c) return;
-  peek.innerHTML = `<div class="peek-k">${esc(c.chapter.chapter)}${done[c.id] ? ' · <b>이해함</b>' : ''}</div><div class="peek-t">${esc(c.title)}</div><p>${esc(firstSentence(c.summary))}</p><span class="peek-go">눌러서 이 개념으로 ›</span>`;
+  peek.innerHTML = `<div class="peek-k">${lvPill(c)} ${esc(c.chapter.chapter)}${done[c.id] ? ' · <b>이해함</b>' : ''}</div><div class="peek-t">${esc(c.title)}</div><p>${esc(firstSentence(c.summary))}</p><span class="peek-go">눌러서 이 개념으로 ›</span>`;
   peek.hidden = false;
   const r = a.getBoundingClientRect(), w = Math.min(320, innerWidth - 24);
   peek.style.width = w + 'px';
@@ -150,7 +166,7 @@ addEventListener('scroll', hidePeek, {passive: true});
 
 /* ---------- 머리·목차 ---------- */
 function renderNav(active){
-  gnav.innerHTML = parts.map(p => `<a href="#/p/${p.info.slug}" class="${active === p ? 'on' : ''}">${esc(p.name)}</a>`).join('');
+  gnav.innerHTML = `<a href="#/s/${nowLevel() + 1}" class="${active === 'stage' ? 'on' : ''}">단계별 학습</a>` + parts.map(p => `<a href="#/p/${p.info.slug}" class="${active === p ? 'on' : ''}">${esc(p.name)}</a>`).join('');
 }
 function renderToc(){
   let h = '';
@@ -160,7 +176,7 @@ function renderToc(){
       const n = ch.concepts.filter(c => done[c.id]).length;
       h += `<details class="toc-ch" data-ch="${ch.id}"><summary><span>${esc(ch.chapter)}</span><span class="cnt">${n}/${ch.concepts.length}</span></summary><ul>`;
       ch.concepts.forEach(c => {
-        h += `<li><a href="#/c/${c.id}" data-id="${c.id}" class="${done[c.id] ? 'done' : ''}"><span class="dot"></span><span>${esc(c.title)}</span></a></li>`;
+        h += `<li><a href="#/c/${c.id}" data-id="${c.id}" class="lv${lvOf(c) + 1}${done[c.id] ? ' done' : ''}"><span class="dot"></span><span>${esc(c.title)}</span></a></li>`;
       });
       h += '</ul></details>';
     });
@@ -189,13 +205,14 @@ function renderHome(){
   const nEx = concepts.reduce((a, c) => a + (c.examples || []).length, 0);
   const last = store.get('last', null);
   const lastC = last && byId.has(last) ? concepts[byId.get(last)] : null;
+  const nl = nowLevel(), rec = byLevel[nl].find(c => !done[c.id]) || byLevel[nl][0];
   let h = `<section class="hero"><div class="hero-in">
       <div class="eyebrow">수능 국어 개념서</div>
       <h1>ᄉᆡ미 기픈 믈</h1>
-      <p class="lead">깊이 판 개념은 마르지 않습니다.<br>핵심 → 설명 → 예문 → 함정 → 기출, 다섯 걸음이면 한 개념이 끝납니다.</p>
+      <p class="lead">깊이 판 개념은 마르지 않습니다.<br>기본에서 도약까지, 한 계단씩 올라가요.</p>
       <div class="cta">
-        ${lastC ? `<a class="btn primary" href="#/c/${lastC.id}">이어서 공부하기</a><a class="btn ghost" href="#/c/${lastC.id}">${esc(lastC.title)} ›</a>` : `<a class="btn primary" href="#/c/${concepts[0] ? concepts[0].id : ''}">시작하기</a>`}
-        <a class="btn ghost" href="#/p/${parts[0] ? parts[0].info.slug : ''}">목차 보기 ›</a>
+        ${lastC ? `<a class="btn primary" href="#/c/${lastC.id}">이어서 공부하기</a><a class="btn ghost" href="#/c/${lastC.id}">${esc(lastC.title)} ›</a>` : `<a class="btn primary" href="#/c/${rec ? rec.id : ''}">기본부터 시작하기</a>`}
+        <a class="btn ghost" href="#/s/${nl + 1}">${esc(LEVELS[nl].name)} 단계 보기 ›</a>
       </div>
       <div class="stats">
         <div><b>${total}</b><span>개념</span></div>
@@ -204,6 +221,19 @@ function renderHome(){
         <div><b>${nDone}</b><span>이해한 개념</span></div>
       </div>
   </div></section>`;
+  h += `<section class="home-sec"><div class="sec-title"><h2>단계별 학습</h2><p class="sec-sub">한 단계의 80%를 이해하면 다음 단계를 추천해 드려요.</p></div><ol class="ladder">`;
+  LEVELS.forEach((l, n) => {
+    const cs = byLevel[n], d = cs.filter(c => done[c.id]).length, pct = cs.length ? Math.round(d / cs.length * 100) : 0;
+    const state = n < nl ? 'past' : n === nl ? 'now' : 'next';
+    h += `<li class="step-card lv${n + 1} ${state}"><a href="#/s/${n + 1}">
+      <span class="step-no">${n + 1}</span>
+      ${state === 'now' ? '<span class="now-tag">지금 추천</span>' : state === 'past' ? '<span class="now-tag done">완료</span>' : ''}
+      <h3>${l.name}</h3><p>${l.desc}</p>
+      <div class="prog"><span>개념 ${cs.length}개</span><span>${pct}%</span></div>
+      <div class="bar"><i style="width:${pct}%"></i></div>
+    </a></li>`;
+  });
+  h += `</ol></section>`;
   h += `<section class="home-sec"><div class="sec-title"><h2>영역</h2></div><div class="parts">`;
   parts.forEach(p => {
     const cs = p.chapters.flatMap(ch => ch.concepts);
@@ -243,6 +273,7 @@ function renderPart(slug){
     <div class="crumb"><a href="#/">처음</a> › ${esc(p.info.note)}</div>
     <h1>${esc(p.name)}</h1>
     <p class="sub">장 ${p.chapters.length}개 · 개념 ${cs.length}개 · 이해한 개념 ${d}개</p>
+    <div class="k-filter lv-filter" role="group" aria-label="단계로 거르기"><button class="on" data-lvf="all">전체</button>${LEVELS.map((l, n) => `<button data-lvf="${n}"><span class="lv-dot lv${n + 1}"></span>${l.name} ${cs.filter(c => lvOf(c) === n).length}</button>`).join('')}</div>
   </div></section><div class="page">`;
   p.chapters.forEach(ch => {
     const n = ch.concepts.filter(c => done[c.id]).length;
@@ -250,17 +281,49 @@ function renderPart(slug){
     if(ch.intro) h += `<p class="intro">${esc(firstSentence(ch.intro))}</p>`;
     h += `<ol class="path">${ch.concepts.map((c, i) => {
       const nk = (c.kichul || []).filter(k => KICHUL[k]).length;
-      return `<li><a class="ccard${done[c.id] ? ' done' : ''}" href="#/c/${c.id}">
+      return `<li data-lv="${lvOf(c)}"><a class="ccard${done[c.id] ? ' done' : ''}" href="#/c/${c.id}">
         <span class="no">${i + 1}</span>
         <h3>${esc(c.title)}</h3>
         <p>${esc(firstSentence(c.summary))}</p>
-        <div class="foot-row">${c.level === '심화' ? '<span class="pill deep">심화</span>' : ''}<span class="pill">기출 ${nk}</span>${done[c.id] ? '<span class="pill ok">이해함</span>' : ''}</div>
+        <div class="foot-row">${lvPill(c)}<span class="pill">기출 ${nk}</span>${done[c.id] ? '<span class="pill ok">이해함</span>' : ''}</div>
       </a></li>`;
     }).join('')}</ol></section>`;
   });
   h += '</div>';
   main.innerHTML = h;
   renderNav(p); markToc(null); setPage('part', p.name);
+}
+
+/* ---------- 단계 화면 ---------- */
+function renderStage(n){
+  n = Math.min(Math.max(1, n | 0), LEVELS.length) - 1;
+  const l = LEVELS[n], cs = byLevel[n], d = cs.filter(c => done[c.id]).length, pct = cs.length ? Math.round(d / cs.length * 100) : 0;
+  const first = cs.find(c => !done[c.id]);
+  let h = `<section class="band slim"><div class="band-in">
+    <div class="crumb"><a href="#/">처음</a> › 단계별 학습</div>
+    <div class="stage-tabs" role="tablist">${LEVELS.map((x, j) => `<a href="#/s/${j + 1}" class="lv${j + 1}${j === n ? ' on' : ''}" role="tab" aria-selected="${j === n}"><b>${j + 1}</b>${x.name}</a>`).join('')}</div>
+    <h1><span class="lv-dot lv${n + 1}"></span>${l.name}</h1>
+    <p class="sub">${l.desc}. ${l.how}</p>
+    <div class="stage-prog lv${n + 1}"><div class="bar"><i style="width:${pct}%"></i></div><span>${d} / ${cs.length} 이해</span>
+      ${first ? `<a class="btn primary small" href="#/c/${first.id}">${d ? '이어서' : '시작'}: ${esc(first.title)} ›</a>` : (n < LEVELS.length - 1 ? `<a class="btn primary small" href="#/s/${n + 2}">다음 단계: ${LEVELS[n + 1].name} ›</a>` : '<span class="pill ok">모든 단계를 마쳤어요</span>')}
+    </div>
+  </div></section><div class="page">`;
+  parts.forEach(p => {
+    const pcs = p.chapters.flatMap(ch => ch.concepts).filter(c => lvOf(c) === n);
+    if(!pcs.length) return;
+    h += `<section class="ch-block"><div class="sec-title row"><h2>${esc(p.name)}</h2><span class="ch-prog">${pcs.filter(c => done[c.id]).length}/${pcs.length}</span></div><ol class="path">`;
+    h += pcs.map(c => `<li><a class="ccard${done[c.id] ? ' done' : ''}" href="#/c/${c.id}">
+        <span class="no">${cs.indexOf(c) + 1}</span>
+        <span class="ch-name">${esc(c.chapter.chapter)}</span>
+        <h3>${esc(c.title)}</h3>
+        <p>${esc(firstSentence(c.summary))}</p>
+        <div class="foot-row">${lvPill(c)}<span class="pill">기출 ${(c.kichul || []).filter(k => KICHUL[k]).length}</span>${done[c.id] ? '<span class="pill ok">이해함</span>' : ''}</div>
+      </a></li>`).join('');
+    h += `</ol></section>`;
+  });
+  h += '</div>';
+  main.innerHTML = h;
+  renderNav('stage'); markToc(null); setPage('stage', `${l.name} 단계`);
 }
 
 /* ---------- 개념 화면: 다섯 걸음 ---------- */
@@ -306,7 +369,7 @@ function renderConcept(id, stepArg){
   /* 머리: 제목 + 장 안의 길(점) */
   let h = `<section class="band slim" style="--pc:${p.info.color}"><div class="band-in">
     <div class="crumb"><a href="#/">처음</a> › <a href="#/p/${p.info.slug}">${esc(p.name)}</a> › <a href="#/p/${p.info.slug}" data-ch="${ch.id}">${esc(ch.chapter)}</a></div>
-    <h1>${esc(c.title)}${c.level === '심화' ? ' <span class="pill deep">심화</span>' : ''}</h1>
+    <h1>${esc(c.title)} ${lvPill(c)}</h1>
     <ol class="trail" aria-label="${esc(ch.chapter)}의 개념 순서">${ch.concepts.map((x, j) => `<li><a href="#/c/${x.id}" class="${x === c ? 'here' : ''}${done[x.id] ? ' ok' : ''}" data-tip="${j + 1}. ${esc(x.title)}" aria-label="${j + 1}. ${esc(x.title)}"></a></li>`).join('')}</ol>
   </div></section>`;
 
@@ -356,7 +419,13 @@ function renderConcept(id, stepArg){
       ${prev ? `<a class="flow-i" href="#/c/${prev.id}"><small>앞 개념</small><span>${esc(prev.title)}</span></a>` : ''}
       <div class="flow-i here"><small>지금</small><span>${esc(c.title)}</span></div>
       ${next ? `<a class="flow-i" href="#/c/${next.id}"><small>다음 개념</small><span>${esc(next.title)}</span></a>` : ''}
-    </div></div>`;
+    </div>`;
+  const nl2 = nextInLevel(c);
+  if(nl2 && nl2 !== next) h += `<a class="lv-next lv${lvOf(c) + 1}" href="#/c/${nl2.id}"><small>${esc(c.level)} 단계의 다음 개념</small><span>${esc(nl2.title)} ›</span></a>`;
+  h += `</div>`;
+  /* 더 낮은 단계의 연결 개념 중 아직 안 한 것 = 먼저 보면 좋은 개념 */
+  const pre = [...outLinks.get(id)].map(x => concepts[byId.get(x)]).filter(x => lvOf(x) < lvOf(c) && !done[x.id]).slice(0, 4);
+  if(pre.length) h += `<div class="rail-card pre"><h2 class="rail-h">먼저 보면 좋은 개념</h2><p class="rail-sub">이 개념을 이해하는 바탕이 되는 더 쉬운 개념이에요.</p><div class="chips">${pre.map(x => `<a class="chip-c" href="#/c/${x.id}" data-id="${x.id}">${lvPill(x)} ${esc(x.title)}</a>`).join('')}</div></div>`;
   if(outs.length || ins.length){
     h += `<div class="rail-card"><h2 class="rail-h">이어지는 개념</h2>`;
     if(outs.length) h += `<p class="rail-sub">이 개념 안에 나오는 개념</p><div class="chips">${chips(outs)}</div>`;
@@ -374,8 +443,11 @@ function renderConcept(id, stepArg){
   if(key === 'exam') applyFilter();
   const db = $('#doneBtn');
   if(db) db.onclick = () => {
+    const before = nowLevel();
     if(done[id]) delete done[id]; else { done[id] = 1; celebrate(db); }
     store.set('done', done);
+    const after = nowLevel();
+    if(after > before) toast(`${LEVELS[before].name} 단계를 80% 넘게 마쳤어요. 이제 <a href="#/s/${after + 1}">${LEVELS[after].name} 단계 ›</a>로 올라가 볼까요?`);
     setTimeout(() => { const y = scrollY; renderToc(); renderConcept(id); scrollTo(0, y); }, done[id] ? 650 : 0);
   };
   renderNav(p); markToc(id); setPage('concept', c.title);
@@ -385,6 +457,13 @@ function goStep(k){
   renderConcept(m[1], k);
   const st = main.querySelector('.stepper');
   if(st && st.getBoundingClientRect().top < 0) st.scrollIntoView({block: 'start'});
+}
+function toast(html){
+  const t = document.createElement('div');
+  t.className = 'toast'; t.setAttribute('role', 'status'); t.innerHTML = html;
+  document.body.append(t);
+  requestAnimationFrame(() => t.classList.add('on'));
+  setTimeout(() => { t.classList.remove('on'); setTimeout(() => t.remove(), 400); }, 7000);
 }
 function celebrate(el){
   el.classList.add('pop');
@@ -468,6 +547,13 @@ main.addEventListener('toggle', e => {
 main.addEventListener('click', e => {
   const stepBtn = e.target.closest('[data-step]');
   if(stepBtn){ goStep(+stepBtn.dataset.step); return; }
+  const lf = e.target.closest('.lv-filter button');
+  if(lf){
+    main.querySelectorAll('.lv-filter button').forEach(b => b.classList.toggle('on', b === lf));
+    main.querySelectorAll('.path li[data-lv]').forEach(li => { li.hidden = lf.dataset.lvf !== 'all' && li.dataset.lv !== lf.dataset.lvf; });
+    main.querySelectorAll('.ch-block').forEach(sec => { sec.hidden = !sec.querySelector('.path li:not([hidden])'); });
+    return;
+  }
   const f = e.target.closest('.k-filter button');
   if(f){ kFilter = f.dataset.f; main.querySelectorAll('.k-filter button').forEach(b => b.classList.toggle('on', b === f)); applyFilter(); return; }
   const chLink = e.target.closest('a[data-ch]');
@@ -526,7 +612,7 @@ function renderSearch(term){
   }).filter(x => x.s > 0).sort((a, b) => b.s - a.s);
   const mk = s => esc(s).split(esc(t)).join(`<mark>${esc(t)}</mark>`);
   main.innerHTML = `<section class="band slim"><div class="band-in"><div class="crumb">찾기</div><h1>‘${esc(t)}’ ${hits.length}개</h1></div></section><div class="page">` +
-    (hits.length ? `<div class="results">${hits.map(({c}) => `<a class="ccard" href="#/c/${c.id}"><span class="no">${esc(c.chapter.chapter)}</span><h3>${mk(c.title)}</h3><p>${mk(firstSentence(c.summary))}</p></a>`).join('')}</div>` : '<p class="k-empty">찾는 개념이 없습니다. 다른 낱말로 찾아보세요.</p>') + '</div>';
+    (hits.length ? `<div class="results">${hits.map(({c}) => `<a class="ccard" href="#/c/${c.id}"><span class="ch-name">${esc(c.chapter.chapter)} · ${esc(c.level)}</span><h3>${mk(c.title)}</h3><p>${mk(firstSentence(c.summary))}</p></a>`).join('')}</div>` : '<p class="k-empty">찾는 개념이 없습니다. 다른 낱말로 찾아보세요.</p>') + '</div>';
   setPage('search', '찾기'); renderNav(null); markToc(null);
 }
 let st;
@@ -541,6 +627,7 @@ function route(){
   hidePeek();
   if((m = /^#\/c\/([\w-]+)/.exec(h))) renderConcept(m[1]);
   else if((m = /^#\/p\/([\w-]+)/.exec(h))) renderPart(m[1]);
+  else if((m = /^#\/s\/(\d)/.exec(h))) renderStage(+m[1]);
   else renderHome();
 }
 window.addEventListener('hashchange', () => {

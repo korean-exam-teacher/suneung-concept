@@ -42,8 +42,10 @@ $charDefs = [ordered]@{
   src       = @{ h=900;  f=0; c='#1F4A3E'; b=1 }
   cover     = @{ h=4400; f=1; c='#1F4A3E'; b=1 }
   coverS    = @{ h=1600; f=0; c='#5B5852' }
-  levelD    = @{ h=850;  f=0; c='#9A4A1C'; b=1 }
-  levelK    = @{ h=850;  f=0; c='#2F5D50'; b=1 }
+  lv1       = @{ h=900;  f=0; c='#0071E3'; b=1 }
+  lv2       = @{ h=900;  f=0; c='#248A3D'; b=1 }
+  lv3       = @{ h=900;  f=0; c='#C25E00'; b=1 }
+  lv4       = @{ h=900;  f=0; c='#8944AB'; b=1 }
 }
 $CHR = @{}; $i = 0; foreach($k in $charDefs.Keys){ $CHR[$k] = $i; $i++ }
 $BOLD = @{ body='bodyB'; cell='cellB'; q='qB'; qU='qUB'; exT='exT'; small='smallB' }
@@ -239,14 +241,20 @@ P "$($B.built) 엮음 · 기출 문항·지문·선택지의 저작권은 한국
 P '일러두기' 'chT' 'chT' -Break
 P '이 책은 웹 사이트 「ᄉᆡ미 기픈 믈」과 같은 내용으로 만들어졌습니다. 한 개념은 ‘핵심 요약 → 개념 → 예문 → 자주 틀리는 점 → 관련 평가원 기출’ 순서로 짜여 있습니다.' 'body' 'body'
 P '관련 기출의 문제 전문은 각 장 끝 ‘기출 풀어 보기’에 모았고, 정답과 해설은 책 맨 끝에 있습니다. 웹 사이트에서는 같은 문제를 바로 풀고 채점할 수 있습니다.' 'body' 'body'
-P '2028학년도 수능부터 국어는 선택 과목 없이 화법과 언어(1~10번), 독서와 작문(11~30번), 문학(31~45번)의 45문항을 모두 풉니다. 문법은 ‘화법과 언어’에 들어가며 화법 상황과 섞여 나올 수 있습니다.' 'box' 'body'
+P '이 책의 개념은 쉬운 것부터 기본 → 심화 → 발전 → 도약의 네 단계로 나뉩니다. 처음 공부할 때는 각 장에서 [기본] 개념만 먼저 훑고, 한 바퀴를 돈 뒤 [심화], [발전], [도약] 순서로 다시 올라가면 부담이 적습니다.' 'body' 'body'
+Table @('단계', '무엇을 배우나', '개념 수') @(
+  @('기본', '용어와 뼈대를 세우는 첫 개념', "$(@($B.chapters | % { $_.concepts } | ? { $_.level -eq '기본' }).Count)개"),
+  @('심화', '수능에 해마다 나오는 규칙과 개념', "$(@($B.chapters | % { $_.concepts } | ? { $_.level -eq '심화' }).Count)개"),
+  @('발전', '여러 개념을 엮어 자료와 지문에 적용', "$(@($B.chapters | % { $_.concepts } | ? { $_.level -eq '발전' }).Count)개"),
+  @('도약', '고난도·통합·3점 문항 대비', "$(@($B.chapters | % { $_.concepts } | ? { $_.level -eq '도약' }).Count)개")
+)P '2028학년도 수능부터 국어는 선택 과목 없이 화법과 언어(1~10번), 독서와 작문(11~30번), 문학(31~45번)의 45문항을 모두 풉니다. 문법은 ‘화법과 언어’에 들어가며 화법 상황과 섞여 나올 수 있습니다.' 'box' 'body'
 
 # 차례
 P '차례' 'chT' 'chT' -Break
 $lastPart = ''
 foreach($ch in $B.chapters){
   if($ch.part -ne $lastPart){ P $ch.part 'toc1' 'label'; $lastPart = $ch.part }
-  P ("$($ch.chapter)  —  " + (($ch.concepts | ForEach-Object { $_.title }) -join ' · ')) 'toc2' 'small'
+  P ("$($ch.chapter)  —  " + (($ch.concepts | ForEach-Object { "$($_.title)[$($_.level)]" }) -join ' · ')) 'toc2' 'small'
 }
 
 # 장
@@ -258,7 +266,7 @@ foreach($ch in $B.chapters){
   if($ch.intro){ P $ch.intro 'box' 'body' }
   $chItems = New-Object System.Collections.ArrayList
   foreach($c in $ch.concepts){
-    $lv = $(if($c.level -eq '심화'){ 'levelD' } else { 'levelK' })
+    $lv = 'lv' + ([array]::IndexOf(@('기본','심화','발전','도약'), [string]$c.level) + 1); if($lv -eq 'lv0'){ $lv = 'lv1' }
     PRuns ((Runs $c.title 'conT') + "<hp:run charPrIDRef=`"$($CHR[$lv])`"><hp:t>  $(X $(if($c.level){$c.level}else{'핵심'}))</hp:t></hp:run>") 'conT'
     P $c.summary 'box' 'body'
     foreach($bl in @($c.body)){
