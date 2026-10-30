@@ -33,6 +33,11 @@ $PASSAGES = BankConst 'PASSAGES'
 $CHOICES = BankConst 'CHOICES'
 $FIGS = BankConst 'FIGS'
 $EXPLAIN = (ReadText "$Bank\explain.json" | ConvertFrom-Json).i
+# 2028학년도 예시문항도 함께 씀
+$ITEMS = @(foreach($x in $ITEMS){ $x }) + @(foreach($x in (BankConst 'ITEMS_2028')){ $x })
+foreach($src in @(@((BankConst 'PASSAGES_2028'), $PASSAGES), @((BankConst 'CHOICES_2028'), $CHOICES))){
+  foreach($p in $src[0].PSObject.Properties){ $src[1] | Add-Member -NotePropertyName $p.Name -NotePropertyValue $p.Value -Force }
+}
 function Prop($o, $k){ $p = $o.PSObject.Properties[$k]; if($p){ $p.Value } else { $null } }
 function Plain($s){ if($null -eq $s){ return '' }; ([string]$s) -replace '[\uFDD0-\uFDD3]', '' }
 

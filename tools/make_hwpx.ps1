@@ -1,13 +1,16 @@
 ﻿# book/book.json(빌드 결과) → book/수능국어_개념서.hwpx
 # 사용법: powershell -ExecutionPolicy Bypass -File tools\make_hwpx.ps1   (build.ps1이 끝에서 자동으로 부름)
+param([string]$In, [string]$Out, [switch]$NoPictures)
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $PSScriptRoot
+if(-not $In){ $In = "$Root\book\book.json" }
+if(-not $Out){ $Out = "$Root\book\수능국어_개념서.hwpx" }
 $U8 = New-Object Text.UTF8Encoding $false
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
-$B = [IO.File]::ReadAllText("$Root\book\book.json", [Text.Encoding]::UTF8) | ConvertFrom-Json
+$B = [IO.File]::ReadAllText($In, [Text.Encoding]::UTF8) | ConvertFrom-Json
 function Prop($o, $k){ $p = $o.PSObject.Properties[$k]; if($p){ $p.Value } else { $null } }
 $CIRCLED = @('', '①', '②', '③', '④', '⑤')
 
@@ -182,6 +185,7 @@ function Table($head, $rows, $widths = $null){
 # ---------- 그림 ----------
 $images = [ordered]@{}   # binId → 원본 경로
 function Picture($rel, $maxW){
+  if($NoPictures){ P '(그림 생략)' 'body' 'small'; return }
   $path = Join-Path "$Root\docs" $rel
   if(-not (Test-Path $path)){ P '(그림을 찾지 못했습니다)' 'body' 'small'; return }
   $binId = 'image' + ($images.Count + 1)
@@ -191,6 +195,9 @@ function Picture($rel, $maxW){
   $ow = $pw * 75; $oh = $ph * 75                    # 96dpi 기준 원래 크기
   $w = [int][math]::Min($maxW, $ow * 0.62)           # 문제지 그림은 크게 잘라 두었으므로 줄여 넣음
   $h = [int]($oh * $w / $ow)
+  # 쪽보다 긴 그림은 한글이 쪽 나누기를 하지 못해 멈추므로, 본문 높이의 85%로 줄임
+  $maxH = [int](($PH - 5102 - 4252 - 2834 * 2) * 0.85)
+  if($h -gt $maxH){ $w = [int]($w * $maxH / $h); $h = $maxH }
   $script:objId++
   $sx = '{0:0.######}' -f ($w / $ow); $sy = '{0:0.######}' -f ($h / $oh)
   $x = "<hp:pic id=`"$script:objId`" zOrder=`"0`" numberingType=`"PICTURE`" textWrap=`"TOP_AND_BOTTOM`" textFlow=`"BOTH_SIDES`" lock=`"0`" dropcapstyle=`"None`" href=`"`" groupLevel=`"0`" instid=`"$($script:objId + 500000)`" reverse=`"0`"><hp:offset x=`"0`" y=`"0`"/><hp:orgSz width=`"$ow`" height=`"$oh`"/><hp:curSz width=`"$w`" height=`"$h`"/><hp:flip horizontal=`"0`" vertical=`"0`"/><hp:rotationInfo angle=`"0`" centerX=`"$([int]($w/2))`" centerY=`"$([int]($h/2))`" rotateimage=`"1`"/><hp:renderingInfo><hc:transMatrix e1=`"1`" e2=`"0`" e3=`"0`" e4=`"0`" e5=`"1`" e6=`"0`"/><hc:scaMatrix e1=`"$sx`" e2=`"0`" e3=`"0`" e4=`"0`" e5=`"$sy`" e6=`"0`"/><hc:rotMatrix e1=`"1`" e2=`"0`" e3=`"0`" e4=`"0`" e5=`"1`" e6=`"0`"/></hp:renderingInfo><hp:imgRect><hc:pt0 x=`"0`" y=`"0`"/><hc:pt1 x=`"$ow`" y=`"0`"/><hc:pt2 x=`"$ow`" y=`"$oh`"/><hc:pt3 x=`"0`" y=`"$oh`"/></hp:imgRect><hp:imgClip left=`"0`" right=`"$ow`" top=`"0`" bottom=`"$oh`"/><hp:inMargin left=`"0`" right=`"0`" top=`"0`" bottom=`"0`"/><hp:imgDim dimwidth=`"$ow`" dimheight=`"$oh`"/><hc:img binaryItemIDRef=`"$binId`" bright=`"0`" contrast=`"0`" effect=`"REAL_PIC`" alpha=`"0`"/><hp:effects/><hp:sz width=`"$w`" widthRelTo=`"ABSOLUTE`" height=`"$h`" heightRelTo=`"ABSOLUTE`" protect=`"0`"/><hp:pos treatAsChar=`"1`" affectLSpacing=`"0`" flowWithText=`"1`" allowOverlap=`"0`" holdAnchorAndSO=`"0`" vertRelTo=`"PARA`" horzRelTo=`"COLUMN`" vertAlign=`"TOP`" horzAlign=`"LEFT`" vertOffset=`"0`" horzOffset=`"0`"/><hp:outMargin left=`"0`" right=`"0`" top=`"0`" bottom=`"0`"/><hp:shapeComment>문제지 그림</hp:shapeComment></hp:pic>"
@@ -346,7 +353,7 @@ $files = [ordered]@{
 # XML이 올바른지 먼저 확인
 foreach($k in 'Contents/header.xml', 'Contents/section0.xml', 'Contents/content.hpf'){ $d = New-Object Xml.XmlDocument; $d.LoadXml($files[$k]) }
 
-$out = "$Root\book\수능국어_개념서.hwpx"
+$out = $Out
 if(Test-Path $out){ Remove-Item $out -Force }
 $fs = [IO.File]::Open($out, 'Create')
 $zip = New-Object IO.Compression.ZipArchive($fs, [IO.Compression.ZipArchiveMode]::Create)
