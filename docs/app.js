@@ -62,7 +62,7 @@ function renderNav(active){
 function renderToc(){
   let h = '';
   parts.forEach(p => {
-    h += `<div class="toc-part" style="--pc:${p.info.color}">${esc(p.info.en || p.name)}</div>`;
+    h += `<div class="toc-part" style="--pc:${p.info.color}">${esc(p.name)}</div>`;
     p.chapters.forEach(ch => {
       const n = ch.concepts.filter(c => done[c.id]).length;
       h += `<details class="toc-ch" data-ch="${ch.id}"><summary><span>${esc(ch.chapter)}</span><span class="cnt">${n}/${ch.concepts.length}</span></summary><ul>`;
@@ -98,12 +98,12 @@ function renderHome(){
   const lastC = last && byId.has(last) ? concepts[byId.get(last)] : null;
   let h = `<section class="hero"><div class="hero-in">
     <div>
-      <div class="eyebrow">SUNEUNG KOREAN · CONCEPT BOOK</div>
+      <div class="eyebrow">수능 국어 개념서</div>
       <h1>ᄉᆡ미 기픈 믈</h1>
-      <p class="lead">샘이 깊은 물은 가뭄에 마르지 않습니다. 개념을 깊이 파 두면 처음 보는 지문과 &lt;보기&gt;에도 흔들리지 않습니다. 개념 → 예문 → 함정 → 평가원 기출 순서로 익히세요.</p>
+      <p class="lead">깊이 판 개념은 마르지 않습니다.<br>개념, 예문, 함정, 그리고 평가원 기출까지 한 곳에서.</p>
       <div class="cta">
-        ${lastC ? `<a class="btn primary" href="#/c/${lastC.id}">이어서: ${esc(lastC.title)} →</a>` : `<a class="btn primary" href="#/c/${concepts[0] ? concepts[0].id : ''}">처음부터 시작 →</a>`}
-        <a class="btn ghost" href="#/p/${parts[0] ? parts[0].info.slug : ''}">목차 보기</a>
+        ${lastC ? `<a class="btn primary" href="#/c/${lastC.id}">이어서 공부하기</a><a class="btn ghost" href="#/c/${lastC.id}">${esc(lastC.title)} ›</a>` : `<a class="btn primary" href="#/c/${concepts[0] ? concepts[0].id : ''}">시작하기</a>`}
+        <a class="btn ghost" href="#/p/${parts[0] ? parts[0].info.slug : ''}">목차 보기 ›</a>
       </div>
     </div>
     <div class="stats">
@@ -118,12 +118,13 @@ function renderHome(){
     const d = cs.filter(c => done[c.id]).length;
     h += `<a class="part-tile" href="#/p/${p.info.slug}" style="--pc:${p.info.color}">
       <span class="num">${pad(i + 1)}</span>
-      <span class="k">${esc(p.info.en)}</span>
+      <span class="k">${esc(p.info.note)}</span>
       <h3>${esc(p.name)}</h3>
-      <span class="meta">${esc(p.info.note)} · 개념 ${cs.length}개</span>
+      <span class="meta">장 ${p.chapters.length}개 · 개념 ${cs.length}개</span>
       <ol>${p.chapters.map(ch => `<li>${esc(ch.chapter)}</li>`).join('')}</ol>
-      <div class="prog"><span>PROGRESS</span><span>${d} / ${cs.length}</span></div>
+      <div class="prog"><span>진도</span><span>${d} / ${cs.length}</span></div>
       <div class="bar"><i style="width:${cs.length ? Math.round(d / cs.length * 100) : 0}%"></i></div>
+      <span class="more">살펴보기 ›</span>
     </a>`;
   });
   h += `</div></section>`;
@@ -153,7 +154,7 @@ function renderPart(slug){
   const cs = p.chapters.flatMap(ch => ch.concepts);
   const d = cs.filter(c => done[c.id]).length;
   let h = `<section class="band" style="--pc:${p.info.color}"><div class="band-in">
-    <div class="crumb"><a href="#/">처음</a> › ${esc(p.info.en)}</div>
+    <div class="crumb"><a href="#/">처음</a> › ${esc(p.info.note)}</div>
     <h1>${esc(p.name)}</h1>
     <p class="sub">${esc(p.info.note)} · 장 ${p.chapters.length}개 · 개념 ${cs.length}개 · 이해한 개념 ${d}개</p>
   </div></section><div class="page">`;
@@ -200,10 +201,10 @@ function renderConcept(id){
   let h = `<section class="band" style="--pc:${p.info.color}"><div class="band-in">
     <div class="crumb"><a href="#/">처음</a> › <a href="#/p/${p.info.slug}">${esc(p.name)}</a> › <a href="#/p/${p.info.slug}" data-ch="${ch.id}">${esc(ch.chapter)}</a> · ${pad(ci + 1)}/${pad(ch.concepts.length)}</div>
     <h1>${esc(c.title)}</h1>
-    <div class="chips"><span class="${c.level === '심화' ? 'deep' : ''}">${esc(c.level || '핵심')}</span><span>예문 ${(c.examples || []).length}</span><span>기출 ${ks.length}</span>${done[id] ? '<span>✓ 이해함</span>' : ''}</div>
+    <div class="chips"><span class="tag">${esc(ch.chapter)}</span><span class="${c.level === '심화' ? 'deep' : ''}">${esc(c.level || '핵심')}</span><span>예문 ${(c.examples || []).length}</span><span>기출 ${ks.length}</span>${done[id] ? '<span>✓ 이해함</span>' : ''}</div>
   </div></section>`;
   h += `<div class="concept-grid"><article class="article">`;
-  if(ci === 0 && ch.intro) h += `<div class="box" style="margin-top:0"><span class="bt">CHAPTER INTRO</span>${rich(ch.intro)}</div>`;
+  if(ci === 0 && ch.intro) h += `<div class="box" style="margin-top:0"><span class="bt">이 장에서는</span>${rich(ch.intro)}</div>`;
   h += `<div class="summary">${rich(c.summary)}</div>`;
   h += `<section class="body">${blockTitle('개념', 'CONCEPT')}${(c.body || []).map(blockHtml).join('')}</section>`;
   h += `</article><aside class="rail">`;
@@ -213,7 +214,7 @@ function renderConcept(id){
   if((c.traps || []).length){
     h += `<div class="rail-card">${blockTitle('자주 틀리는 점', 'TRAPS', c.traps.length)}<ul class="traps">${c.traps.map(t => `<li>${rich(t)}</li>`).join('')}</ul></div>`;
   }
-  h += `<div class="rail-card">${blockTitle('이 장의 개념', 'IN THIS CHAPTER')}<nav class="rail-nav">${ch.concepts.map((x, j) => `<a href="#/c/${x.id}" ${x === c ? 'style="background:var(--navy);color:#fff"' : ''}><span>${pad(j + 1)} ${esc(x.title)}</span><small>${done[x.id] ? '✓' : ''}</small></a>`).join('')}</nav></div>`;
+  h += `<div class="rail-card">${blockTitle('이 장의 개념', 'IN THIS CHAPTER')}<nav class="rail-nav">${ch.concepts.map((x, j) => `<a href="#/c/${x.id}" class="${x === c ? 'on' : ''}"><span>${pad(j + 1)} ${esc(x.title)}</span><small>${done[x.id] ? '✓' : ''}</small></a>`).join('')}</nav></div>`;
   h += `</aside></div>`;
   h += `<section class="kichul">${blockTitle('관련 평가원 기출', 'PAST EXAMS', ks.length)}`;
   if(ks.length){
@@ -226,7 +227,7 @@ function renderConcept(id){
   } else h += '<p class="k-empty">이 개념에 연결된 기출이 아직 없습니다.</p>';
   h += '</section>';
   h += `<div class="done-row"><button class="btn ${done[id] ? '' : 'primary'}" id="doneBtn">${done[id] ? '✓ 이해했어요 (취소)' : '이 개념을 이해했어요'}</button></div>`;
-  h += `<nav class="pager">${prev ? `<a href="#/c/${prev.id}"><small>← PREV</small><b>${esc(prev.title)}</b></a>` : ''}${next ? `<a class="next" href="#/c/${next.id}"><small>NEXT →</small><b>${esc(next.title)}</b></a>` : ''}</nav>`;
+  h += `<nav class="pager">${prev ? `<a href="#/c/${prev.id}"><small>‹ 이전 개념</small><b>${esc(prev.title)}</b></a>` : ''}${next ? `<a class="next" href="#/c/${next.id}"><small>다음 개념 ›</small><b>${esc(next.title)}</b></a>` : ''}</nav>`;
   main.innerHTML = h;
   applyFilter();
   $('#doneBtn').onclick = () => {
@@ -327,7 +328,7 @@ function renderSearch(term){
     return {c, s};
   }).filter(x => x.s > 0).sort((a, b) => b.s - a.s);
   const mk = s => esc(s).split(esc(t)).join(`<mark>${esc(t)}</mark>`);
-  main.innerHTML = `<section class="band"><div class="band-in"><div class="crumb">SEARCH</div><h1>‘${esc(t)}’ ${hits.length}개</h1></div></section><div class="page">` +
+  main.innerHTML = `<section class="band"><div class="band-in"><div class="crumb">찾기</div><h1>‘${esc(t)}’ ${hits.length}개</h1></div></section><div class="page">` +
     (hits.length ? `<div class="results">${hits.map(({c}) => `<a class="ccard" href="#/c/${c.id}"><div class="top-row"><span class="no">${esc(c.chapter.chapter)}</span><span class="pill${c.level === '심화' ? ' deep' : ''}">${esc(c.level || '핵심')}</span></div><h3>${mk(c.title)}</h3><p>${mk(plain(c.summary).replace(/\*\*/g, ''))}</p></a>`).join('')}</div>` : '<p class="k-empty">찾는 개념이 없습니다. 다른 낱말로 찾아보세요.</p>') + '</div>';
   setPage('search', '찾기'); renderNav(null); markToc(null);
 }
