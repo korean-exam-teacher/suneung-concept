@@ -140,3 +140,4 @@ Write-Host "docs\data.js, book\book.json 저장 / 그림 $($figFiles.Count)개 �
 
 # ---------- 6. 한글(HWPX) 책 ----------
 & "$PSScriptRoot\make_hwpx.ps1"
+& "$PSScriptRoot\make_hwpx.ps1" -Lite -Out "$Root\book\수능국어_개념서_가벼운판.hwpx"

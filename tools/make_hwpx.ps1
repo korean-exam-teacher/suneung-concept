@@ -1,6 +1,7 @@
 ﻿# book/book.json(빌드 결과) → book/수능국어_개념서.hwpx
 # 사용법: powershell -ExecutionPolicy Bypass -File tools\make_hwpx.ps1   (build.ps1이 끝에서 자동으로 부름)
-param([string]$In, [string]$Out, [switch]$NoPictures)
+param([string]$In, [string]$Out, [switch]$NoPictures, [switch]$Lite)
+$SITE = 'https://korean-exam-teacher.github.io/suneung-concept/'
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $PSScriptRoot
 if(-not $In){ $In = "$Root\book\book.json" }
@@ -233,14 +234,15 @@ $first = "<hp:p id=`"0`" paraPrIDRef=`"$($PA.center)`" styleIDRef=`"0`" pageBrea
 # 표지
 for($k = 0; $k -lt 6; $k++){ P '' 'center' 'body' }
 P 'ᄉᆡ미 기픈 믈' 'center' 'cover'
-P '수능 국어 개념서 — 개념 · 예문 · 평가원 기출' 'center' 'coverS'
+P $(if($Lite){ '수능 국어 개념서 — 가벼운판' } else { '수능 국어 개념서 — 개념 · 예문 · 평가원 기출' }) 'center' 'coverS'
 for($k = 0; $k -lt 14; $k++){ P '' 'center' 'body' }
 P "$($B.built) 엮음 · 기출 문항·지문·선택지의 저작권은 한국교육과정평가원에 있으며 비영리 학습용으로만 씁니다." 'center' 'small'
 
 # 일러두기
 P '일러두기' 'chT' 'chT' -Break
 P '이 책은 웹 사이트 「ᄉᆡ미 기픈 믈」과 같은 내용으로 만들어졌습니다. 한 개념은 ‘핵심 요약 → 개념 → 예문 → 자주 틀리는 점 → 관련 평가원 기출’ 순서로 짜여 있습니다.' 'body' 'body'
-P '관련 기출의 문제 전문은 각 장 끝 ‘기출 풀어 보기’에 모았고, 정답과 해설은 책 맨 끝에 있습니다. 웹 사이트에서는 같은 문제를 바로 풀고 채점할 수 있습니다.' 'body' 'body'
+if($Lite){ P "가벼운판에는 개념마다 관련 평가원 기출의 출처·발문·정답만 실었습니다. 지문·선택지·해설은 웹 사이트에서 바로 풀고 채점할 수 있습니다: $SITE" 'body' 'body' }
+else { P '관련 기출의 문제 전문은 각 장 끝 ‘기출 풀어 보기’에 모았고, 정답과 해설은 책 맨 끝에 있습니다. 웹 사이트에서는 같은 문제를 바로 풀고 채점할 수 있습니다.' 'body' 'body' }
 P '이 책의 개념은 쉬운 것부터 기본 → 심화 → 발전 → 도약의 네 단계로 나뉩니다. 처음 공부할 때는 각 장에서 [기본] 개념만 먼저 훑고, 한 바퀴를 돈 뒤 [심화], [발전], [도약] 순서로 다시 올라가면 부담이 적습니다.' 'body' 'body'
 Table @('단계', '무엇을 배우나', '개념 수') @(
   @('기본', '용어와 뼈대를 세우는 첫 개념', "$(@($B.chapters | % { $_.concepts } | ? { $_.level -eq '기본' }).Count)개"),
@@ -287,6 +289,15 @@ foreach($ch in $B.chapters){
     $ks = @($c.kichul | Where-Object { Prop $B.items $_ })
     if($ks.Count){
       P '관련 평가원 기출' 'label' 'label'
+      if($Lite){
+        # 가벼운판: 문항마다 한 줄(출처 — 발문, 정답)
+        foreach($k in $ks){
+          $it = Prop $B.items $k
+          $stem = ([string]$it.stem) -replace '^\s*\d+\.\s*', ''
+          P ('• ' + (ExamName $it) + ' — ' + $stem + '  (정답 ' + $CIRCLED[[int]$it.answer] + ')') 'list' 'small'
+        }
+        continue
+      }
       $refs = foreach($k in $ks){
         if(-not ($chItems -contains $k)){ [void]$chItems.Add($k) }
         $n = $chItems.IndexOf($k) + 1
@@ -296,7 +307,7 @@ foreach($ch in $B.chapters){
     }
   }
   # 장 끝 기출 풀어 보기
-  if($chItems.Count){
+  if($chItems.Count -and -not $Lite){
     P "$($ch.chapter) — 기출 풀어 보기" 'chT' 'chT' -Break
     P '앞에서 [번호]로 소개한 문항입니다. 지문이 있는 문항은 지문을 먼저 실었습니다. 정답과 해설은 책 맨 끝에 있습니다.' 'body' 'small'
     $shownP = @{}
@@ -315,6 +326,7 @@ foreach($ch in $B.chapters){
 }
 
 # 정답과 해설
+if(-not $Lite){
 P '정답과 해설' 'partT' 'partT' -Break
 $lastCh = ''
 foreach($a in $answers){
@@ -322,6 +334,7 @@ foreach($a in $answers){
   $it = Prop $B.items $a.key
   PRuns ("<hp:run charPrIDRef=`"$($CHR.qB)`"><hp:t>[$($a.n)] 정답 $($CIRCLED[[int]$it.answer])</hp:t></hp:run><hp:run charPrIDRef=`"$($CHR.small)`"><hp:t>  $(X (ExamName $it))</hp:t></hp:run>") 'src'
   if($it.explain){ foreach($line in ([string]$it.explain -split "`n")){ if($line.Trim()){ P $line 'body' 'q' } } }
+}
 }
 
 # ================= 꾸러미 =================
