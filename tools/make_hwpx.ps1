@@ -22,79 +22,82 @@ function LvOf($c){ $i = [array]::IndexOf($LEVELS, [string]$c.level); if($i -lt 0
 $PAGES = @{}
 if($PageMap -and (Test-Path $PageMap)){ $pm = [IO.File]::ReadAllText($PageMap, [Text.Encoding]::UTF8) | ConvertFrom-Json; foreach($p in $pm.PSObject.Properties){ $PAGES[$p.Name] = [int]$p.Value } }
 
-# ---------- 쪽: A4, 좁은 여백, 본문 2단 ----------
-$PW = 59528; $PH = 84186
-$ML = 4819; $MR = 4819; $MT = 5386; $MB = 4535; $MH = 2835; $MF = 2268
+# ---------- 쪽: 선생님 교재 양식(방과후 비문학 교재)과 같게 ----------
+# A4, 좌우 여백 10mm, 위아래 5mm, 머리말 20mm, 꼬리말 10mm, 2단(단 사이 8mm, 가운데 세로선)
+$PW = 59528; $PH = 84188
+$ML = 2834; $MR = 2834; $MT = 1417; $MB = 1417; $MH = 5669; $MF = 2834
 $TW = $PW - $ML - $MR            # 본문 전체 폭
-$GAP = 1700                       # 단 사이
+$GAP = 2268                       # 단 사이
 $CW = [int](($TW - $GAP) / 2)     # 한 단 폭
 
-# ---------- 색 ----------
-$NAVY = '#0E5C55'; $ACC = '#0E6B63'; $BAND = '#0C3B37'; $INK = '#1D1D1F'; $INK2 = '#3A3A3C'; $INK3 = '#6E6E73'; $INK4 = '#A1A1A6'
-$LINE = '#DADDE2'; $TINT = '#F4F5F7'
+# ---------- 색: 교재처럼 검정 위주 ----------
+$NAVY = '#000000'; $ACC = '#000000'; $BAND = '#000000'; $INK = '#000000'; $INK2 = '#222222'; $INK3 = '#555555'; $INK4 = '#888888'
+$LINE = '#000000'; $TINT = '#F2F2F2'
 $LV = @('#0071E3', '#248A3D', '#C25E00', '#8944AB')
 $LVT = @('#E8F2FD', '#E9F6EC', '#FDF0E3', '#F4ECF8')
 
-# ---------- 글자 모양 (font 0 함초롬돋움, 1 함초롬바탕, 2 맑은 고딕, 3·4 맑은 고딕 굵게) ----------
+# ---------- 글자 모양 ----------
+# 글꼴 0 함초롬돋움, 1 함초롬바탕, 2 KBIZ한마음고딕 B(머리말 제목), 3 함초롬바탕 굵게, 4 함초롬돋움 굵게
+# 본문은 함초롬바탕 10pt
 $charDefs = [ordered]@{
-  # 본문은 함초롬바탕, 제목·표·딸린 글은 Noto Sans KR. 크기는 제목 11.5 / 본문 9.2 / 표 8 / 작은 글 7.8pt
-  body   = @{ h=950;  f=1; c=$INK }
-  bodyB  = @{ h=950;  f=1; c=$INK; b=1 }
-  bodyU  = @{ h=950;  f=1; c=$INK; u=1 }
-  small  = @{ h=780;  f=2; c=$INK3 }
-  smallB = @{ h=780;  f=3; c=$INK2 }
-  cell   = @{ h=850;  f=2; c=$INK }
-  cellB  = @{ h=850;  f=3; c=$INK }
-  cellU  = @{ h=850;  f=2; c=$INK; u=1 }
-  head   = @{ h=740;  f=3; c=$INK3 }
-  exE    = @{ h=900;  f=1; c=$INK; b=1 }
-  exN    = @{ h=830;  f=2; c=$INK2 }
-  exNB   = @{ h=830;  f=3; c=$INK }
-  label  = @{ h=900;  f=3; c=$ACC }
-  h3     = @{ h=950;  f=3; c=$ACC }
-  conT   = @{ h=1500; f=4; c=$INK }
-  labelM = @{ h=700;  f=3; c=$ACC }
-  lv1    = @{ h=740;  f=3; c=$LV[0] }
-  lv2    = @{ h=740;  f=3; c=$LV[1] }
-  lv3    = @{ h=740;  f=3; c=$LV[2] }
-  lv4    = @{ h=740;  f=3; c=$LV[3] }
-  trapM  = @{ h=900;  f=3; c=$ACC }
-  sum    = @{ h=930;  f=3; c=$INK2 }
-  sumB   = @{ h=930;  f=4; c=$INK }
-  chNo   = @{ h=820;  f=3; c='#7FC4BA' }
-  chT    = @{ h=1900; f=4; c='#FFFFFF' }
-  chIn   = @{ h=820;  f=2; c='#CFE3E0' }
-  chInB  = @{ h=800;  f=3; c='#FFFFFF' }
-  idx    = @{ h=800;  f=2; c=$INK }
-  idxPg  = @{ h=780;  f=3; c=$INK3 }
-  tocNo  = @{ h=1000; f=2; c=$INK4 }
-  tocBig = @{ h=2400; f=4; c=$ACC }
-  tocMeta= @{ h=760;  f=2; c=$INK3 }
-  tiny   = @{ h=200;  f=2; c=$INK }
-  partNo = @{ h=9000; f=4; c='#E3E6EC' }
-  partK  = @{ h=1100; f=3; c=$INK3 }
-  partT  = @{ h=3600; f=4; c=$NAVY }
-  partS  = @{ h=1050; f=2; c=$INK2 }
-  cover  = @{ h=6600; f=0; c=$NAVY; b=1 }
-  coverK = @{ h=1150; f=3; c=$LV[0] }
-  coverS = @{ h=1350; f=2; c=$INK3 }
-  coverW = @{ h=1000; f=3; c='#FFFFFF' }
-  coverF = @{ h=760;  f=2; c=$INK4 }
-  secT   = @{ h=1700; f=4; c=$INK }
-  tocP   = @{ h=1150; f=4; c=$ACC }
+  body   = @{ h=1000; f=1; c=$INK }
+  bodyB  = @{ h=1000; f=3; c=$INK }
+  bodyU  = @{ h=1000; f=1; c=$INK; u=1 }
+  small  = @{ h=900;  f=1; c=$INK3 }
+  smallB = @{ h=900;  f=3; c=$INK }
+  cell   = @{ h=900;  f=1; c=$INK }
+  cellB  = @{ h=900;  f=3; c=$INK }
+  cellU  = @{ h=900;  f=1; c=$INK; u=1 }
+  head   = @{ h=900;  f=4; c=$INK }
+  exE    = @{ h=1000; f=3; c=$INK }
+  exN    = @{ h=900;  f=1; c=$INK2 }
+  exNB   = @{ h=900;  f=3; c=$INK }
+  label  = @{ h=1000; f=4; c=$INK }
+  h3     = @{ h=1000; f=4; c=$INK }
+  conT   = @{ h=1300; f=4; c=$INK }
+  labelM = @{ h=900;  f=4; c=$INK }
+  lv1    = @{ h=900;  f=4; c=$INK }
+  lv2    = @{ h=900;  f=4; c=$INK }
+  lv3    = @{ h=900;  f=4; c=$INK }
+  lv4    = @{ h=900;  f=4; c=$INK }
+  trapM  = @{ h=1000; f=4; c=$INK }
+  sum    = @{ h=1000; f=1; c=$INK }
+  sumB   = @{ h=1000; f=3; c=$INK }
+  chNo   = @{ h=1000; f=4; c=$INK3 }
+  chT    = @{ h=1700; f=4; c=$INK }
+  chIn   = @{ h=1000; f=1; c=$INK2 }
+  chInB  = @{ h=1000; f=3; c=$INK }
+  idx    = @{ h=950;  f=1; c=$INK }
+  idxPg  = @{ h=950;  f=1; c=$INK }
+  tocNo  = @{ h=1000; f=1; c=$INK4 }
+  tocBig = @{ h=1800; f=4; c=$INK }
+  tocMeta= @{ h=900;  f=1; c=$INK3 }
+  tiny   = @{ h=200;  f=1; c=$INK }
+  partNo = @{ h=6000; f=4; c='#D9D9D9' }
+  partK  = @{ h=1100; f=4; c=$INK3 }
+  partT  = @{ h=3000; f=4; c=$INK }
+  partS  = @{ h=1050; f=1; c=$INK2 }
+  cover  = @{ h=6000; f=0; c=$INK; b=1 }
+  coverK = @{ h=1200; f=4; c=$INK3 }
+  coverS = @{ h=1300; f=1; c=$INK2 }
+  coverW = @{ h=1000; f=4; c='#FFFFFF' }
+  coverF = @{ h=850;  f=1; c=$INK4 }
+  secT   = @{ h=1600; f=4; c=$INK }
+  tocP   = @{ h=1100; f=4; c=$INK }
   tocPN  = @{ h=1400; f=4; c=$INK }
-  tocCh  = @{ h=1000; f=3; c=$INK }
-  tocC   = @{ h=800;  f=2; c=$INK2 }
-  tocPg  = @{ h=800;  f=2; c=$INK3 }
-  tocPgB = @{ h=1000; f=3; c=$INK }
-  hdr    = @{ h=720;  f=2; c=$INK4 }
-  hdrB   = @{ h=720;  f=3; c=$NAVY }
-  q      = @{ h=880;  f=1; c=$INK }
-  qB     = @{ h=880;  f=1; c=$INK; b=1 }
-  qU     = @{ h=880;  f=1; c=$INK; u=1 }
-  qUB    = @{ h=880;  f=1; c=$INK; u=1; b=1 }
-  src    = @{ h=780;  f=3; c=$NAVY }
-  ans    = @{ h=820;  f=3; c=$NAVY }
+  tocCh  = @{ h=1000; f=4; c=$INK }
+  tocC   = @{ h=950;  f=1; c=$INK2 }
+  tocPg  = @{ h=950;  f=1; c=$INK }
+  tocPgB = @{ h=1000; f=4; c=$INK }
+  hdr    = @{ h=1000; f=0; c=$INK }
+  hdrB   = @{ h=1000; f=4; c=$INK }
+  hdrT   = @{ h=1800; f=2; c=$INK }
+  q      = @{ h=1000; f=1; c=$INK }
+  qB     = @{ h=1000; f=3; c=$INK }
+  qU     = @{ h=1000; f=1; c=$INK; u=1 }
+  qUB    = @{ h=1000; f=3; c=$INK; u=1 }
+  src    = @{ h=1000; f=4; c=$INK }
+  ans    = @{ h=1000; f=4; c=$INK }
 }
 $CHR = @{}; $i = 0; foreach($k in $charDefs.Keys){ $CHR[$k] = $i; $i++ }
 $BOLD = @{ body='bodyB'; cell='cellB'; q='qB'; qU='qUB'; small='smallB'; exN='exNB'; sum='sumB'; chIn='chInB' }
@@ -102,9 +105,8 @@ $UND  = @{ body='bodyU'; cell='cellU'; q='qU'; qB='qUB' }
 function CharPrXml($id, $d){
   $five = 'hangul="{0}" latin="{0}" hanja="{0}" japanese="{0}" other="{0}" symbol="{0}" user="{0}"'
   $x = "<hh:charPr id=`"$id`" height=`"$($d.h)`" textColor=`"$($d.c)`" shadeColor=`"none`" useFontSpace=`"0`" useKerning=`"0`" symMark=`"NONE`" borderFillIDRef=`"2`">"
-  $sp = $(if($d.h -ge 1200){ -3 } else { -1 })
-  $x += "<hh:fontRef $($five -f $d.f)/><hh:ratio $($five -f 100)/><hh:spacing $($five -f $sp)/><hh:relSz $($five -f 100)/><hh:offset $($five -f 0)/>"
-  if($d.b -or $d.f -ge 3){ $x += '<hh:bold/>' }   # 글꼴 3·4는 맑은 고딕 굵게
+  $x += "<hh:fontRef $($five -f $d.f)/><hh:ratio $($five -f 100)/><hh:spacing $($five -f 0)/><hh:relSz $($five -f 100)/><hh:offset $($five -f 0)/>"
+  if($d.b -or $d.f -ge 3){ $x += '<hh:bold/>' }   # 글꼴 3·4는 굵게
   $x += $(if($d.u){ '<hh:underline type="BOTTOM" shape="SOLID" color="#000000"/>' } else { '<hh:underline type="NONE" shape="SOLID" color="#000000"/>' })
   $x + '<hh:strikeout shape="NONE" color="#000000"/><hh:outline type="NONE"/><hh:shadow type="NONE" color="#C0C0C0" offsetX="10" offsetY="10"/></hh:charPr>'
 }
@@ -125,63 +127,64 @@ function AddBF($name, $sides, $fill){
   [void]$bfList.Add($x + '</hh:borderFill>')
   $BF[$name] = $id
 }
-$hair = @('SOLID', '0.12 mm', $LINE)
+$blk = @('SOLID', '0.12 mm', '#000000')
+$all4 = @{ left=$blk; right=$blk; top=$blk; bottom=$blk }
 AddBF 'page' $null $null
 AddBF 'none' $null $null
-AddBF 'sum' $null $TINT                                   # 바탕색은 이 연회색 하나만 씀
-AddBF 'cell' @{ bottom=$hair } $null
-AddBF 'cellHead' @{ bottom=@('SOLID', '0.3 mm', $INK) } $null
-AddBF 'box' $null $TINT
-AddBF 'conRule' @{ top=@('SOLID', '0.3 mm', $INK) } $null   # 개념과 개념 사이의 굵은 선
-AddBF 'navy' $null $BAND
-AddBF 'conLine' @{ bottom=@('SOLID', '0.4 mm', $ACC) } $null
-AddBF 'hdr' @{ bottom=$hair } $null
-AddBF 'bogi' @{ left=@('SOLID', '0.12 mm', $INK3); right=@('SOLID', '0.12 mm', $INK3); top=@('SOLID', '0.12 mm', $INK3); bottom=@('SOLID', '0.12 mm', $INK3) } $null
-AddBF 'rule' @{ top=@('SOLID', '0.4 mm', $NAVY) } $null
-$blk = @('SOLID', '0.12 mm', '#000000')
-AddBF 'bogiCell' @{ left=$blk; right=$blk; top=$blk; bottom=$blk } $null
-AddBF 'tocRow' @{ bottom=@('SOLID', '0.1 mm', '#E8EAEE') } $null
+AddBF 'sum' $all4 $null                                     # 요약: 가는 검은 테두리 상자
+AddBF 'cell' $all4 $null                                    # 표: 가는 검은 격자
+AddBF 'cellHead' $all4 $TINT
+AddBF 'box' $all4 $TINT
+AddBF 'conRule' @{ top=@('SOLID', '0.4 mm', '#000000') } $null
+AddBF 'navy' @{ top=@('SOLID', '0.7 mm', '#000000'); bottom=$blk } $null   # 장 머리: 위 굵은 선, 아래 가는 선
+AddBF 'conLine' @{ bottom=@('SOLID', '0.4 mm', '#000000') } $null
+AddBF 'hdr' @{ bottom=@('SOLID', '0.4 mm', '#000000') } $null
+AddBF 'bogi' $all4 $null
+AddBF 'rule' @{ top=@('SOLID', '0.4 mm', '#000000') } $null
+AddBF 'bogiCell' $all4 $null
+AddBF 'tocRow' @{ bottom=@('SOLID', '0.1 mm', '#BBBBBB') } $null
 for($k = 0; $k -lt 4; $k++){
   AddBF "lvFill$k" $null $LV[$k]
   AddBF "lvTint$k" $null $LVT[$k]
 }
 
-# ---------- 문단 모양 ----------
+# ---------- 문단 모양: 줄 간격은 모두 160% ----------
 $paraDefs = [ordered]@{
-  body    = @{ a='JUSTIFY'; l=172; next=420 }
-  center  = @{ a='CENTER';  l=150 }
-  right   = @{ a='RIGHT';   l=140 }
-  list    = @{ a='JUSTIFY'; l=168; left=800; indent=-800; next=90 }
-  h3      = @{ a='LEFT';    l=150; prev=900; next=260; keep=1 }
-  label   = @{ a='LEFT';    l=140; prev=1000; next=300; keep=1 }
-  conTag  = @{ a='LEFT';    l=130; prev=600; next=100; keep=1 }
-  conT    = @{ a='LEFT';    l=125; prev=0; next=0; keep=1 }
-  spacer  = @{ a='LEFT';    l=100; prev=0; next=0 }
-  sum     = @{ a='JUSTIFY'; l=165; prev=200; next=700; border=$BF.sum }
-  box     = @{ a='JUSTIFY'; l=165; prev=500; next=600; border=$BF.box }
-  trap    = @{ a='JUSTIFY'; l=165; left=800; indent=-800; next=100 }
-  cell    = @{ a='LEFT';    l=135 }
-  cellC   = @{ a='CENTER';  l=135 }
-  cellR   = @{ a='RIGHT';   l=135 }
+  body    = @{ a='JUSTIFY'; l=160; next=300 }
+  center  = @{ a='CENTER';  l=160 }
+  right   = @{ a='RIGHT';   l=160 }
+  list    = @{ a='JUSTIFY'; l=160; left=1000; indent=-1000; next=100 }
+  h3      = @{ a='LEFT';    l=160; prev=600; next=200; keep=1 }
+  label   = @{ a='LEFT';    l=160; prev=700; next=200; keep=1 }
+  conTag  = @{ a='LEFT';    l=160; prev=400; next=0; keep=1 }
+  conT    = @{ a='LEFT';    l=160; prev=0; next=0; keep=1 }
+  spacer  = @{ a='LEFT';    l=160; prev=0; next=0 }
+  sum     = @{ a='JUSTIFY'; l=160; prev=0; next=0 }
+  box     = @{ a='JUSTIFY'; l=160; prev=300; next=400; border=$BF.box }
+  trap    = @{ a='JUSTIFY'; l=160; left=1000; indent=-1000; next=120 }
+  cell    = @{ a='LEFT';    l=160 }
+  cellC   = @{ a='CENTER';  l=160 }
+  cellR   = @{ a='RIGHT';   l=160 }
   q       = @{ a='JUSTIFY'; l=160; next=120 }
-  qHang   = @{ a='JUSTIFY'; l=160; left=1000; indent=-1000; prev=900; next=240; keep=1 }
-  bogi    = @{ a='JUSTIFY'; l=158; left=500; right=500; prev=60; next=60; border=$BF.bogi }
-  bogiC   = @{ a='CENTER';  l=158; left=500; right=500; prev=60; next=0; border=$BF.bogi }
-  choice  = @{ a='JUSTIFY'; l=158; left=1800; indent=-800; next=60 }
-  passage = @{ a='JUSTIFY'; l=165; indent=900 }
-  src     = @{ a='LEFT';    l=150; prev=1100; next=260; keep=1 }
-  navy    = @{ a='LEFT';    l=150; left=900; right=900; border=$BF.navy }
-  hdr     = @{ a='RIGHT';   l=130; border=$BF.hdr }
-  secT    = @{ a='LEFT';    l=130; prev=0; next=500 }
+  qHang   = @{ a='JUSTIFY'; l=160; left=1100; indent=-1100; prev=800; next=200; keep=1 }
+  bogi    = @{ a='JUSTIFY'; l=160; left=500; right=500; prev=60; next=60; border=$BF.bogi }
+  bogiC   = @{ a='CENTER';  l=160; left=500; right=500; prev=60; next=0; border=$BF.bogi }
+  choice  = @{ a='JUSTIFY'; l=160; left=1000; indent=-1000; next=40 }
+  passage = @{ a='JUSTIFY'; l=160; indent=1000 }
+  src     = @{ a='LEFT';    l=160; prev=900; next=200; keep=1 }
+  navy    = @{ a='LEFT';    l=160 }
+  hdr     = @{ a='LEFT';    l=160 }
+  hdrC    = @{ a='CENTER';  l=160 }
+  secT    = @{ a='LEFT';    l=160; prev=0; next=400 }
   partNo  = @{ a='LEFT';    l=100 }
-  partT   = @{ a='LEFT';    l=120; next=300 }
-  coverT  = @{ a='LEFT';    l=110; next=200 }
-  gap     = @{ a='LEFT';    l=100 }
+  partT   = @{ a='LEFT';    l=130; next=300 }
+  coverT  = @{ a='LEFT';    l=130; next=200 }
+  gap     = @{ a='LEFT';    l=160 }
   bogiL   = @{ a='CENTER';  l=160; next=120 }
-  bogiT   = @{ a='JUSTIFY'; l=165 }
-  bogiWrap= @{ a='LEFT';    l=100; left=200 }
-  bandP   = @{ a='JUSTIFY'; l=160; next=60 }
-  bandT   = @{ a='LEFT';    l=120; prev=80; next=320 }
+  bogiT   = @{ a='JUSTIFY'; l=160 }
+  bogiWrap= @{ a='LEFT';    l=160 }
+  bandP   = @{ a='JUSTIFY'; l=160; next=80 }
+  bandT   = @{ a='LEFT';    l=160; prev=40; next=200 }
 }
 $PA = @{}; $i = 0; foreach($k in $paraDefs.Keys){ $PA[$k] = $i; $i++ }
 function ParaPrXml($id, $d){
@@ -236,12 +239,29 @@ function Mark($key, $needle){ $ANCHOR[$key] = $needle }   # 쪽 번호를 찾을
 function PageOf($key){ if($PAGES.ContainsKey($key)){ [string]$PAGES[$key] } else { '000' } }
 
 # 단 바꾸기·머리말은 문단 안의 조종 문자로 넣음
-function ColCtrl($n){ "<hp:ctrl><hp:colPr id=`"`" type=`"NEWSPAPER`" layout=`"LEFT`" colCount=`"$n`" sameSz=`"1`" sameGap=`"$GAP`"/></hp:ctrl>" }
+# 2단일 때는 교재처럼 단 사이에 가는 세로선
+function ColCtrl($n){
+  $line = $(if($n -ge 2){ '<hp:colLine type="SOLID" width="0.12 mm" color="#000000"/>' } else { '' })
+  "<hp:ctrl><hp:colPr id=`"`" type=`"NEWSPAPER`" layout=`"LEFT`" colCount=`"$n`" sameSz=`"1`" sameGap=`"$GAP`">$line</hp:colPr></hp:ctrl>"
+}
+# 머리말: 교재와 같은 3칸 표 — [과목 상자 그림] [제목] [반/번호 : / 이름 :], 아래 굵은 선
 $script:hdrId = 0
+$script:hdrLabel = 'kor'      # 영역에 들어가면 lang·lit·read·sw로 바뀜
+function HdrCell($col, $row, $rowSpan, $w, $h, $bf, $vAlign, $inner){
+  "<hp:tc name=`"`" header=`"0`" hasMargin=`"0`" protect=`"0`" editable=`"0`" dirty=`"0`" borderFillIDRef=`"$bf`"><hp:subList id=`"`" textDirection=`"HORIZONTAL`" lineWrap=`"BREAK`" vertAlign=`"$vAlign`" linkListIDRef=`"0`" linkListNextIDRef=`"0`" textWidth=`"0`" textHeight=`"0`" hasTextRef=`"0`" hasNumRef=`"0`">$inner</hp:subList><hp:cellAddr colAddr=`"$col`" rowAddr=`"$row`"/><hp:cellSpan colSpan=`"1`" rowSpan=`"$rowSpan`"/><hp:cellSz width=`"$w`" height=`"$h`"/><hp:cellMargin left=`"510`" right=`"510`" top=`"141`" bottom=`"141`"/></hp:tc>"
+}
 function HeaderCtrl($left, $right){
   $script:hdrId++
-  $inner = "<hp:p id=`"0`" paraPrIDRef=`"$($PA.hdr)`" styleIDRef=`"0`" pageBreak=`"0`" columnBreak=`"0`" merged=`"0`">$(Rn $left 'hdrB')$(Rn ('    ' + $right) 'hdr')</hp:p>"
-  "<hp:ctrl><hp:header id=`"$($script:hdrId)`" applyPageType=`"BOTH`"><hp:subList id=`"`" textDirection=`"HORIZONTAL`" lineWrap=`"BREAK`" vertAlign=`"BOTTOM`" linkListIDRef=`"0`" linkListNextIDRef=`"0`" textWidth=`"$TW`" textHeight=`"$MH`" hasTextRef=`"0`" hasNumRef=`"0`">$inner</hp:subList></hp:header></hp:ctrl>"
+  $pp = { param($para, $runs) "<hp:p id=`"0`" paraPrIDRef=`"$($PA[$para])`" styleIDRef=`"0`" pageBreak=`"0`" columnBreak=`"0`" merged=`"0`">$runs</hp:p>" }
+  $pic = PicXml "$Root\tools\labels\$($script:hdrLabel).png" 11389
+  $c0 = HdrCell 0 0 2 12953 3829 $BF.hdr 'CENTER' (& $pp 'cell' "<hp:run charPrIDRef=`"$($CHR.body)`">$pic<hp:t/></hp:run>")
+  $c1 = HdrCell 1 0 2 22575 4078 $BF.hdr 'CENTER' (& $pp 'hdrC' (Rn $right 'hdrT'))
+  $c2 = HdrCell 2 0 1 17764 2039 $BF.none 'CENTER' (& $pp 'hdr' (Rn '반/번호 :' 'hdr'))
+  $c3 = HdrCell 2 1 1 17764 2039 $BF.hdr 'CENTER' (& $pp 'hdr' (Rn '이름 : ' 'hdr'))
+  $script:objId++
+  $tbl = "<hp:tbl id=`"$script:objId`" zOrder=`"0`" numberingType=`"TABLE`" textWrap=`"TOP_AND_BOTTOM`" textFlow=`"BOTH_SIDES`" lock=`"0`" dropcapstyle=`"None`" pageBreak=`"CELL`" repeatHeader=`"1`" rowCnt=`"2`" colCnt=`"3`" cellSpacing=`"0`" borderFillIDRef=`"$($BF.none)`" noAdjust=`"0`"><hp:sz width=`"53292`" widthRelTo=`"ABSOLUTE`" height=`"4078`" heightRelTo=`"ABSOLUTE`" protect=`"0`"/><hp:pos treatAsChar=`"0`" affectLSpacing=`"0`" flowWithText=`"1`" allowOverlap=`"0`" holdAnchorAndSO=`"0`" vertRelTo=`"PARA`" horzRelTo=`"COLUMN`" vertAlign=`"TOP`" horzAlign=`"LEFT`" vertOffset=`"0`" horzOffset=`"0`"/><hp:outMargin left=`"283`" right=`"283`" top=`"283`" bottom=`"283`"/><hp:inMargin left=`"510`" right=`"510`" top=`"141`" bottom=`"141`"/><hp:tr>$c0$c1$c2</hp:tr><hp:tr>$c3</hp:tr></hp:tbl>"
+  $inner = & $pp 'gap' "<hp:run charPrIDRef=`"$($CHR.body)`">$tbl<hp:t/></hp:run>"
+  "<hp:ctrl><hp:header id=`"$($script:hdrId)`" applyPageType=`"BOTH`"><hp:subList id=`"`" textDirection=`"HORIZONTAL`" lineWrap=`"BREAK`" vertAlign=`"TOP`" linkListIDRef=`"0`" linkListNextIDRef=`"0`" textWidth=`"$TW`" textHeight=`"$MH`" hasTextRef=`"0`" hasNumRef=`"0`">$inner</hp:subList></hp:header></hp:ctrl>"
 }
 function CtrlPara($ctrls, $para = 'gap', [switch]$Break){ Emit "<hp:run charPrIDRef=`"$($CHR.small)`">$ctrls</hp:run>" $para -Break:$Break }
 
@@ -300,17 +320,22 @@ function ContentTable($head, $rows){
     $first = $false
     ,@(for($c = 0; $c -lt @($r).Count; $c++){ if($c -eq 0){ @{ t = @($r)[$c]; c = 'cellB' } } else { [string]@($r)[$c] } })
   }
-  Table @($rowsX) (AutoWidths $all $TW) @{ head = [bool]$head }
+  Table @($rowsX) (AutoWidths $all $CW) @{ head = [bool]$head }
 }
 
 # ---------- 그림 ----------
 $images = [ordered]@{}
+$imgIdOf = @{}
 function Picture($rel, $maxW){
   if($NoPictures){ P '(그림 생략)' 'body' 'small'; return }
   $path = Join-Path "$Root\docs" $rel
   if(-not (Test-Path $path)){ P '(그림을 찾지 못했습니다)' 'body' 'small'; return }
-  $binId = 'image' + ($images.Count + 1)
-  $images[$binId] = $path
+  Emit "<hp:run charPrIDRef=`"$($CHR.body)`">$(PicXml $path $maxW)<hp:t/></hp:run>" 'center'
+}
+# 그림 XML(글자처럼 취급). 같은 파일은 한 번만 담음
+function PicXml($path, $maxW){
+  if($imgIdOf.ContainsKey($path)){ $binId = $imgIdOf[$path] }
+  else { $binId = 'image' + ($images.Count + 1); $images[$binId] = $path; $imgIdOf[$path] = $binId }
   $img = [System.Drawing.Image]::FromFile($path)
   $imgW = $img.Width; $imgH = $img.Height; $img.Dispose()   # 쪽 크기 변수와 이름이 겹치지 않게 함
   $ow = $imgW * 75; $oh = $imgH * 75
@@ -321,8 +346,8 @@ function Picture($rel, $maxW){
   if($h -gt $maxH){ $w = [int]($w * $maxH / $h); $h = $maxH }
   $script:objId++
   $sx = '{0:0.######}' -f ($w / $ow); $sy = '{0:0.######}' -f ($h / $oh)
-  $x = "<hp:pic id=`"$script:objId`" zOrder=`"0`" numberingType=`"PICTURE`" textWrap=`"TOP_AND_BOTTOM`" textFlow=`"BOTH_SIDES`" lock=`"0`" dropcapstyle=`"None`" href=`"`" groupLevel=`"0`" instid=`"$($script:objId + 500000)`" reverse=`"0`"><hp:offset x=`"0`" y=`"0`"/><hp:orgSz width=`"$ow`" height=`"$oh`"/><hp:curSz width=`"$w`" height=`"$h`"/><hp:flip horizontal=`"0`" vertical=`"0`"/><hp:rotationInfo angle=`"0`" centerX=`"$([int]($w/2))`" centerY=`"$([int]($h/2))`" rotateimage=`"1`"/><hp:renderingInfo><hc:transMatrix e1=`"1`" e2=`"0`" e3=`"0`" e4=`"0`" e5=`"1`" e6=`"0`"/><hc:scaMatrix e1=`"$sx`" e2=`"0`" e3=`"0`" e4=`"0`" e5=`"$sy`" e6=`"0`"/><hc:rotMatrix e1=`"1`" e2=`"0`" e3=`"0`" e4=`"0`" e5=`"1`" e6=`"0`"/></hp:renderingInfo><hp:imgRect><hc:pt0 x=`"0`" y=`"0`"/><hc:pt1 x=`"$ow`" y=`"0`"/><hc:pt2 x=`"$ow`" y=`"$oh`"/><hc:pt3 x=`"0`" y=`"$oh`"/></hp:imgRect><hp:imgClip left=`"0`" right=`"$ow`" top=`"0`" bottom=`"$oh`"/><hp:inMargin left=`"0`" right=`"0`" top=`"0`" bottom=`"0`"/><hp:imgDim dimwidth=`"$ow`" dimheight=`"$oh`"/><hc:img binaryItemIDRef=`"$binId`" bright=`"0`" contrast=`"0`" effect=`"REAL_PIC`" alpha=`"0`"/><hp:effects/><hp:sz width=`"$w`" widthRelTo=`"ABSOLUTE`" height=`"$h`" heightRelTo=`"ABSOLUTE`" protect=`"0`"/><hp:pos treatAsChar=`"1`" affectLSpacing=`"0`" flowWithText=`"1`" allowOverlap=`"0`" holdAnchorAndSO=`"0`" vertRelTo=`"PARA`" horzRelTo=`"COLUMN`" vertAlign=`"TOP`" horzAlign=`"LEFT`" vertOffset=`"0`" horzOffset=`"0`"/><hp:outMargin left=`"0`" right=`"0`" top=`"0`" bottom=`"0`"/><hp:shapeComment>문제지 그림</hp:shapeComment></hp:pic>"
-  Emit "<hp:run charPrIDRef=`"$($CHR.body)`">$x<hp:t/></hp:run>" 'center'
+  $x = "<hp:pic id=`"$script:objId`" zOrder=`"0`" numberingType=`"PICTURE`" textWrap=`"TOP_AND_BOTTOM`" textFlow=`"BOTH_SIDES`" lock=`"0`" dropcapstyle=`"None`" href=`"`" groupLevel=`"0`" instid=`"$($script:objId + 500000)`" reverse=`"0`"><hp:offset x=`"0`" y=`"0`"/><hp:orgSz width=`"$ow`" height=`"$oh`"/><hp:curSz width=`"$w`" height=`"$h`"/><hp:flip horizontal=`"0`" vertical=`"0`"/><hp:rotationInfo angle=`"0`" centerX=`"$([int]($w/2))`" centerY=`"$([int]($h/2))`" rotateimage=`"1`"/><hp:renderingInfo><hc:transMatrix e1=`"1`" e2=`"0`" e3=`"0`" e4=`"0`" e5=`"1`" e6=`"0`"/><hc:scaMatrix e1=`"$sx`" e2=`"0`" e3=`"0`" e4=`"0`" e5=`"$sy`" e6=`"0`"/><hc:rotMatrix e1=`"1`" e2=`"0`" e3=`"0`" e4=`"0`" e5=`"1`" e6=`"0`"/></hp:renderingInfo><hp:imgRect><hc:pt0 x=`"0`" y=`"0`"/><hc:pt1 x=`"$ow`" y=`"0`"/><hc:pt2 x=`"$ow`" y=`"$oh`"/><hc:pt3 x=`"0`" y=`"$oh`"/></hp:imgRect><hp:imgClip left=`"0`" right=`"$ow`" top=`"0`" bottom=`"$oh`"/><hp:inMargin left=`"0`" right=`"0`" top=`"0`" bottom=`"0`"/><hp:imgDim dimwidth=`"$ow`" dimheight=`"$oh`"/><hc:img binaryItemIDRef=`"$binId`" bright=`"0`" contrast=`"0`" effect=`"REAL_PIC`" alpha=`"0`"/><hp:effects/><hp:sz width=`"$w`" widthRelTo=`"ABSOLUTE`" height=`"$h`" heightRelTo=`"ABSOLUTE`" protect=`"0`"/><hp:pos treatAsChar=`"1`" affectLSpacing=`"0`" flowWithText=`"1`" allowOverlap=`"0`" holdAnchorAndSO=`"0`" vertRelTo=`"PARA`" horzRelTo=`"COLUMN`" vertAlign=`"TOP`" horzAlign=`"LEFT`" vertOffset=`"0`" horzOffset=`"0`"/><hp:outMargin left=`"0`" right=`"0`" top=`"0`" bottom=`"0`"/><hp:shapeComment>그림</hp:shapeComment></hp:pic>"
+  $x
 }
 
 # ---------- 기출 ----------
@@ -387,11 +412,12 @@ P "$($B.built) · 기출 문항·지문·선택지의 저작권은 한국교육�
 P $SITE 'coverT' 'coverF'
 
 # ----- 차례: 영역과 장만, 한 쪽에 -----
-CtrlPara ((HeaderCtrl 'ᄉᆡ미 기픈 믈' '차례') + (ColCtrl 1)) -Break
+CtrlPara ((ColCtrl 1) + (HeaderCtrl 'ᄉᆡ미 기픈 믈' '차례')) -Break
 Mark 'toc' '차례'
 SectionTitle '차례'
+CtrlPara (ColCtrl 2)
 $chNoOf = @{}; $k = 0; foreach($ch in $B.chapters){ $k++; $chNoOf[$ch.id] = $k }
-$tw4 = @([int]($TW * .07), [int]($TW * .55), [int]($TW * .28)); $tw4 += ($TW - ($tw4 | Measure-Object -Sum).Sum)
+$tw4 = @([int]($CW * .07), [int]($CW * .55), [int]($CW * .28)); $tw4 += ($CW - ($tw4 | Measure-Object -Sum).Sum)
 foreach($pn in $partNames){
   $pi = [array]::IndexOf($partNames, $pn) + 1
   $rows = @(,@(@{ t = "$pi"; c = 'tocBig' }, @{ t = $pn; c = 'tocP' }, @{ t = $PARTNOTE[$pn]; c = 'tocMeta' }, @{ t = (PageOf "part:$pi"); c = 'tocP'; p = 'cellR' }))
@@ -406,12 +432,13 @@ foreach($pn in $partNames){
 if(-not $Lite){ Table @(,@(@{ t = ''; c = 'tocP' }, @{ t = '정답과 해설'; c = 'tocCh' }, @{ t = ''; c = 'tocMeta' }, @{ t = (PageOf 'ans'); c = 'tocPgB'; p = 'cellR' })) $tw4 @{ rowBF = $BF.tocRow; h = 720; tight = 1 } }
 
 # ----- 이 책을 보는 법 + 처음 공부하는 길 -----
-CtrlPara ((HeaderCtrl 'ᄉᆡ미 기픈 믈' '이 책을 보는 법') + (ColCtrl 1)) -Break
+CtrlPara ((ColCtrl 1) + (HeaderCtrl 'ᄉᆡ미 기픈 믈' '이 책을 보는 법')) -Break
 SectionTitle '이 책을 보는 법'
+CtrlPara (ColCtrl 2)
 P '한 개념은 **요약 → 개념 → 예문 → 자주 틀리는 점 → 관련 평가원 기출** 순서로 짜여 있습니다. 개념 제목 위의 색 글자는 학습 단계입니다.' 'body' 'body'
 P '처음에는 각 장에서 **기본** 개념만 훑고, 한 바퀴를 돈 뒤 **심화 → 발전 → 도약** 순서로 다시 올라가면 부담이 적습니다.' 'body' 'body'
 $lvRows = @(,@('단계', '무엇을 배우나', '개념')) + @(for($k = 0; $k -lt 4; $k++){ ,@(@{ t = $LEVELS[$k]; c = "lv$($k + 1)" }, $LVDESC[$k], "$(@($allConcepts | Where-Object { (LvOf $_) -eq $k }).Count)개") })
-Table $lvRows @([int]($TW * .14), [int]($TW * .72), ($TW - [int]($TW * .14) - [int]($TW * .72))) @{ head = 1 }
+Table $lvRows @([int]($CW * .14), [int]($CW * .72), ($CW - [int]($CW * .14) - [int]($CW * .72))) @{ head = 1 }
 if($Lite){ P '가벼운판에는 기출의 출처·발문·정답만 실었습니다. 지문·선택지·해설은 웹 사이트에서 바로 풀고 채점할 수 있습니다.' 'body' 'body' }
 else { P '관련 기출 문제는 장마다 끝의 **기출 풀어 보기**에 모았고, 정답과 해설은 책 맨 끝에 있습니다.' 'body' 'body' }
 P '**2028학년도 수능**부터 국어는 선택 과목 없이 화법과 언어(1~10번), 독서와 작문(11~30번), 문학(31~45번)의 45문항을 모두 풉니다.' 'box' 'body'
@@ -424,16 +451,17 @@ $bRows = for($j = 0; $j -lt $half; $j++){
   ,@(@{ t = $a.title; c = 'idx' }, @{ t = (PageOf "c:$($a.id)"); c = 'idxPg'; p = 'cellR' }, '',
      @{ t = $(if($b2){ $b2.title } else { '' }); c = 'idx' }, @{ t = $(if($b2){ PageOf "c:$($b2.id)" } else { '' }); c = 'idxPg'; p = 'cellR' })
 }
-$bw = [int](($TW - 1400) / 2)
-Table @($bRows) @(($bw - 1300), 1300, 1400, ($bw - 1300), ($TW - 2 * $bw - 1400 + 1300)) @{ rowBF = $BF.tocRow; h = 600; tight = 1 }
+$bw = [int](($CW - 1400) / 2)
+Table @($bRows) @(($bw - 1300), 1300, 1400, ($bw - 1300), ($CW - 2 * $bw - 1400 + 1300)) @{ rowBF = $BF.tocRow; h = 600; tight = 1 }
 
 # ----- 영역과 장 -----
 $answers = New-Object System.Collections.ArrayList
 foreach($pn in $partNames){
   $pi = [array]::IndexOf($partNames, $pn) + 1
   $pchs = @($B.chapters | Where-Object { $_.part -eq $pn })
-  # 영역 첫 쪽
-  CtrlPara ((HeaderCtrl 'ᄉᆡ미 기픈 믈' $pn) + (ColCtrl 1)) -Break
+  # 영역 첫 쪽(머리말 과목 상자도 영역에 맞게)
+  $script:hdrLabel = @{ '언어(문법)'='lang'; '문학'='lit'; '독서'='read'; '화법·작문·매체'='sw' }[$pn]; if(-not $script:hdrLabel){ $script:hdrLabel = 'kor' }
+  CtrlPara ((ColCtrl 1) + (HeaderCtrl 'ᄉᆡ미 기픈 믈' $pn)) -Break
   Mark "part:$pi" "PART $pi · $($PARTNOTE[$pn])"
   for($k = 0; $k -lt 3; $k++){ P '' 'gap' 'body' }
   P ('{0:00}' -f $pi) 'partNo' 'partNo'
@@ -450,17 +478,18 @@ foreach($pn in $partNames){
     $chItems = New-Object System.Collections.ArrayList
     # 장 첫 쪽: 짙은 띠 + 이 장의 개념 목록(단계·쪽 번호) → 바로 본문(1단)
     $chNum = $chNoOf[$ch.id]
-    CtrlPara ((HeaderCtrl 'ᄉᆡ미 기픈 믈' "$pn · $($ch.chapter)") + (ColCtrl 1)) -Break
+    CtrlPara ((ColCtrl 1) + (HeaderCtrl 'ᄉᆡ미 기픈 믈' $ch.chapter)) -Break
+    CtrlPara (ColCtrl 2)   # 2단은 따로 둔 문단에서 시작해야 한글이 제대로 적용함
     # 띠(표) 안 글은 한글의 쪽 글 읽기에 잡히지 않으므로 띠 아래 제목 줄로 쪽을 찾음
     Mark "ch:$($ch.id)" "이 장의 개념 · $($ch.chapter)"
     # 띠는 한 칸짜리 표로(문단 테두리로 칠하면 줄 사이에 틈이 보임)
     $bandLines = @(@{ t = ("CHAPTER {0:00}" -f $chNum); c = 'chNo'; p = 'bandP' }, @{ t = $ch.chapter; c = 'chT'; p = 'bandT' })
     if($ch.intro){ $bandLines += @{ t = $ch.intro; c = 'chIn'; p = 'bandP' } }
-    Table @(,@(@{ lines = $bandLines; bf = $BF.navy })) @($TW) @{ pad = 1100; after = 900 }
+    Table @(,@(@{ lines = $bandLines; bf = $BF.navy })) @($CW) @{ pad = 1100; after = 900 }
     Emit ((Rn '■  ' 'labelM') + (Rn "이 장의 개념 · $($ch.chapter)" 'label') + (Rn "   $(@($ch.concepts).Count)개" 'small')) 'label'
     $ix = 0
     $iRows = foreach($c in $ch.concepts){ $ix++; $l = LvOf $c; ,@(@{ t = ('{0:00}' -f $ix); c = 'tocNo' }, @{ t = $c.title; c = 'idx' }, @{ t = $LEVELS[$l]; c = "lv$($l + 1)" }, @{ t = (PageOf "c:$($c.id)"); c = 'idxPg'; p = 'cellR' }) }
-    Table @($iRows) @([int]($TW * .07), [int]($TW * .73), [int]($TW * .1), ($TW - [int]($TW * .07) - [int]($TW * .73) - [int]($TW * .1))) @{ rowBF = $BF.tocRow; h = 640; tight = 1 }
+    Table @($iRows) @([int]($CW * .07), [int]($CW * .73), [int]($CW * .1), ($CW - [int]($CW * .07) - [int]($CW * .73) - [int]($CW * .1))) @{ rowBF = $BF.tocRow; h = 640; tight = 1 }
     $ix = 0
     foreach($c in $ch.concepts){
       $ix++
@@ -471,7 +500,7 @@ foreach($pn in $partNames){
       Emit ((Rn "$($LEVELS[$clv])" "lv$($clv + 1)") + (Rn ("   {0} {1:00}" -f $ch.chapter, $ix) 'small')) 'conTag'
       Emit (Runs $c.title 'conT') 'conT'
       # 제목 아래 강조색 선: 문단 한쪽 테두리는 한글이 그리지 않아 얇은 한 칸 표로 그림
-      Table @(,@(@{ t = ''; c = 'tiny'; bf = $BF.conLine })) @($TW) @{ pad = 0; h = 120; after = 500 }
+      Table @(,@(@{ t = ''; c = 'tiny'; bf = $BF.conLine })) @($CW) @{ pad = 0; h = 120; after = 500 }
       P $c.summary 'sum' 'sum'
       foreach($bl in @($c.body)){
         if($null -ne (Prop $bl 'p')){ P $bl.p 'body' 'body' }
@@ -483,7 +512,7 @@ foreach($pn in $partNames){
       if(@($c.examples).Count){
         Emit ((Rn '■  ' 'labelM') + (Rn '예문' 'label')) 'label'
         $exRows = foreach($e in @($c.examples)){ ,@(@{ t = $e.ex; c = 'exE' }, @{ t = [string]$e.note; c = 'exN' }) }
-        Table @($exRows) @([int]($TW * .38), ($TW - [int]($TW * .38))) @{ vtop = 1 }
+        Table @($exRows) @([int]($CW * .38), ($CW - [int]($CW * .38))) @{ vtop = 1 }
       }
       if(@($c.traps).Count){
         Emit ((Rn '■  ' 'labelM') + (Rn '자주 틀리는 점' 'label')) 'label'
@@ -509,7 +538,7 @@ foreach($pn in $partNames){
     }
     # 장 끝: 기출 풀어 보기 (2단, 시험지처럼)
     if($chItems.Count -and -not $Lite){
-      CtrlPara ((HeaderCtrl 'ᄉᆡ미 기픈 믈' "$($ch.chapter) · 기출 풀어 보기") + (ColCtrl 1)) -Break
+      CtrlPara ((ColCtrl 1) + (HeaderCtrl 'ᄉᆡ미 기픈 믈' "$($ch.chapter) · 기출 풀어 보기")) -Break
       Mark "kx:$($ch.id)" "$($ch.chapter) — 기출 풀어 보기"
       SectionTitle "$($ch.chapter) — 기출 풀어 보기" '앞에서 [번호]로 소개한 평가원 기출입니다. 지문이 있는 문항은 지문을 먼저 실었습니다. 정답과 해설은 책 맨 끝에 있습니다.'
       CtrlPara (ColCtrl 2)
@@ -531,7 +560,7 @@ foreach($pn in $partNames){
 
 # ----- 정답과 해설 -----
 if(-not $Lite){
-  CtrlPara ((HeaderCtrl 'ᄉᆡ미 기픈 믈' '정답과 해설') + (ColCtrl 1)) -Break
+  CtrlPara ((ColCtrl 1) + (HeaderCtrl 'ᄉᆡ미 기픈 믈' '정답과 해설')) -Break
   # '정답과 해설'은 기출 쪽 안내 문장에도 있으므로, 이 쪽에만 있는 문장으로 찾음
   Mark 'ans' '장마다 기출 풀어 보기의 번호 순서대로 정답과 해설을 실었습니다'
   SectionTitle '정답과 해설' "장마다 기출 풀어 보기의 번호 순서대로 정답과 해설을 실었습니다. 모두 $($answers.Count)문항입니다."
@@ -550,7 +579,7 @@ $ns = 'xmlns:ha="http://www.hancom.co.kr/hwpml/2011/app" xmlns:hp="http://www.ha
 $xmlHead = '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>'
 $section = "$xmlHead<hs:sec $ns>" + $sb.ToString() + '</hs:sec>'
 
-$fontList = @(@('함초롬돋움', 'FCAT_GOTHIC'), @('함초롬바탕', 'FCAT_MYUNGJO'), @('맑은 고딕', 'FCAT_GOTHIC'), @('맑은 고딕', 'FCAT_GOTHIC'), @('맑은 고딕', 'FCAT_GOTHIC'))
+$fontList = @(@('함초롬돋움', 'FCAT_GOTHIC'), @('함초롬바탕', 'FCAT_MYUNGJO'), @('KBIZ한마음고딕 B', 'FCAT_GOTHIC'), @('함초롬바탕', 'FCAT_MYUNGJO'), @('함초롬돋움', 'FCAT_GOTHIC'))
 $fontFace = $(for($k = 0; $k -lt $fontList.Count; $k++){ "<hh:font id=`"$k`" face=`"$($fontList[$k][0])`" type=`"TTF`" isEmbedded=`"0`"><hh:typeInfo familyType=`"$($fontList[$k][1])`" weight=`"6`" proportion=`"4`" contrast=`"0`" strokeVariation=`"1`" armStyle=`"1`" letterform=`"1`" midline=`"1`" xHeight=`"1`"/></hh:font>" }) -join ''
 $faces = (('HANGUL','LATIN','HANJA','JAPANESE','OTHER','SYMBOL','USER') | ForEach-Object { "<hh:fontface lang=`"$_`" fontCnt=`"$($fontList.Count)`">$fontFace</hh:fontface>" }) -join ''
 $i = 0; $charXml = ($charDefs.Keys | ForEach-Object { CharPrXml ($i++) $charDefs[$_] }) -join ''
