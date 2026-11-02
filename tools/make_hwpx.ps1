@@ -24,7 +24,7 @@ if($PageMap -and (Test-Path $PageMap)){ $pm = [IO.File]::ReadAllText($PageMap, [
 
 # ---------- 쪽: 선생님 교재 양식(방과후 비문학 교재)과 같게 ----------
 # A4, 좌우 여백 10mm, 위아래 5mm, 머리말 20mm, 꼬리말 10mm, 2단(단 사이 8mm, 가운데 세로선)
-$PW = 59528; $PH = 84188
+$PW = 72852; $PH = 103181        # B4(257×364mm)
 $ML = 2834; $MR = 2834; $MT = 1417; $MB = 1417; $MH = 5669; $MF = 2834
 $TW = $PW - $ML - $MR            # 본문 전체 폭
 $GAP = 2268                       # 단 사이
@@ -223,9 +223,12 @@ function Runs($text, $base){
 $sb = New-Object Text.StringBuilder
 $script:paraNo = 0                 # 맨 위 문단 번호(차례 쪽 번호 찾기용)
 $ANCHOR = [ordered]@{}             # 차례 항목 → 문단 번호
+$script:cap = $null                # 값이 있으면 문단을 본문 대신 여기에 모음(문항을 한 칸 표로 묶을 때)
 function Emit($xml, $para, [switch]$Break, [switch]$ColBreak){
   $pb = $(if($Break){ '1' } else { '0' }); $cb = $(if($ColBreak){ '1' } else { '0' })
-  [void]$sb.Append("<hp:p id=`"0`" paraPrIDRef=`"$($PA[$para])`" styleIDRef=`"0`" pageBreak=`"$pb`" columnBreak=`"$cb`" merged=`"0`">$xml</hp:p>")
+  $px = "<hp:p id=`"0`" paraPrIDRef=`"$($PA[$para])`" styleIDRef=`"0`" pageBreak=`"$pb`" columnBreak=`"$cb`" merged=`"0`">$xml</hp:p>"
+  if($null -ne $script:cap){ [void]$script:cap.Append($px); return }
+  [void]$sb.Append($px)
   $script:paraNo++
 }
 function P($text, $para = 'body', $char = 'body', [switch]$Break){
@@ -254,12 +257,15 @@ function HeaderCtrl($left, $right){
   $script:hdrId++
   $pp = { param($para, $runs) "<hp:p id=`"0`" paraPrIDRef=`"$($PA[$para])`" styleIDRef=`"0`" pageBreak=`"0`" columnBreak=`"0`" merged=`"0`">$runs</hp:p>" }
   $pic = PicXml "$Root\tools\labels\$($script:hdrLabel).png" 11389
-  $c0 = HdrCell 0 0 2 12953 3829 $BF.hdr 'CENTER' (& $pp 'cell' "<hp:run charPrIDRef=`"$($CHR.body)`">$pic<hp:t/></hp:run>")
-  $c1 = HdrCell 1 0 2 22575 4078 $BF.hdr 'CENTER' (& $pp 'hdrC' (Rn $right 'hdrT'))
-  $c2 = HdrCell 2 0 1 17764 2039 $BF.none 'CENTER' (& $pp 'hdr' (Rn '반/번호 :' 'hdr'))
-  $c3 = HdrCell 2 1 1 17764 2039 $BF.hdr 'CENTER' (& $pp 'hdr' (Rn '이름 : ' 'hdr'))
+  # 교재(A4)의 칸 폭 비율을 용지 폭에 맞춰 늘림
+  $k = $TW / 53860
+  $w0 = [int](12953 * $k); $w1 = [int](22575 * $k); $w2 = [int](17764 * $k); $script:hdrW = $w0 + $w1 + $w2
+  $c0 = HdrCell 0 0 2 $w0 3829 $BF.hdr 'CENTER' (& $pp 'cell' "<hp:run charPrIDRef=`"$($CHR.body)`">$pic<hp:t/></hp:run>")
+  $c1 = HdrCell 1 0 2 $w1 4078 $BF.hdr 'CENTER' (& $pp 'hdrC' (Rn $right 'hdrT'))
+  $c2 = HdrCell 2 0 1 $w2 2039 $BF.none 'CENTER' (& $pp 'hdr' (Rn '반/번호 :' 'hdr'))
+  $c3 = HdrCell 2 1 1 $w2 2039 $BF.hdr 'CENTER' (& $pp 'hdr' (Rn '이름 : ' 'hdr'))
   $script:objId++
-  $tbl = "<hp:tbl id=`"$script:objId`" zOrder=`"0`" numberingType=`"TABLE`" textWrap=`"TOP_AND_BOTTOM`" textFlow=`"BOTH_SIDES`" lock=`"0`" dropcapstyle=`"None`" pageBreak=`"CELL`" repeatHeader=`"1`" rowCnt=`"2`" colCnt=`"3`" cellSpacing=`"0`" borderFillIDRef=`"$($BF.none)`" noAdjust=`"0`"><hp:sz width=`"53292`" widthRelTo=`"ABSOLUTE`" height=`"4078`" heightRelTo=`"ABSOLUTE`" protect=`"0`"/><hp:pos treatAsChar=`"0`" affectLSpacing=`"0`" flowWithText=`"1`" allowOverlap=`"0`" holdAnchorAndSO=`"0`" vertRelTo=`"PARA`" horzRelTo=`"COLUMN`" vertAlign=`"TOP`" horzAlign=`"LEFT`" vertOffset=`"0`" horzOffset=`"0`"/><hp:outMargin left=`"283`" right=`"283`" top=`"283`" bottom=`"283`"/><hp:inMargin left=`"510`" right=`"510`" top=`"141`" bottom=`"141`"/><hp:tr>$c0$c1$c2</hp:tr><hp:tr>$c3</hp:tr></hp:tbl>"
+  $tbl = "<hp:tbl id=`"$script:objId`" zOrder=`"0`" numberingType=`"TABLE`" textWrap=`"TOP_AND_BOTTOM`" textFlow=`"BOTH_SIDES`" lock=`"0`" dropcapstyle=`"None`" pageBreak=`"CELL`" repeatHeader=`"1`" rowCnt=`"2`" colCnt=`"3`" cellSpacing=`"0`" borderFillIDRef=`"$($BF.none)`" noAdjust=`"0`"><hp:sz width=`"$($script:hdrW)`" widthRelTo=`"ABSOLUTE`" height=`"4078`" heightRelTo=`"ABSOLUTE`" protect=`"0`"/><hp:pos treatAsChar=`"0`" affectLSpacing=`"0`" flowWithText=`"1`" allowOverlap=`"0`" holdAnchorAndSO=`"0`" vertRelTo=`"PARA`" horzRelTo=`"COLUMN`" vertAlign=`"TOP`" horzAlign=`"LEFT`" vertOffset=`"0`" horzOffset=`"0`"/><hp:outMargin left=`"283`" right=`"283`" top=`"283`" bottom=`"283`"/><hp:inMargin left=`"510`" right=`"510`" top=`"141`" bottom=`"141`"/><hp:tr>$c0$c1$c2</hp:tr><hp:tr>$c3</hp:tr></hp:tbl>"
   $inner = & $pp 'gap' "<hp:run charPrIDRef=`"$($CHR.body)`">$tbl<hp:t/></hp:run>"
   "<hp:ctrl><hp:header id=`"$($script:hdrId)`" applyPageType=`"BOTH`"><hp:subList id=`"`" textDirection=`"HORIZONTAL`" lineWrap=`"BREAK`" vertAlign=`"TOP`" linkListIDRef=`"0`" linkListNextIDRef=`"0`" textWidth=`"$TW`" textHeight=`"$MH`" hasTextRef=`"0`" hasNumRef=`"0`">$inner</hp:subList></hp:header></hp:ctrl>"
 }
@@ -273,7 +279,7 @@ function TableXml($rows, $widths, $opt){
   $rows = @($rows); if($rows.Count -and -not ($rows[0] -is [array])){ $rows = ,$rows }
   $nr = $rows.Count; $nc = $widths.Count; $W = ($widths | Measure-Object -Sum).Sum
   $script:objId++
-  $x = "<hp:tbl id=`"$script:objId`" zOrder=`"0`" numberingType=`"TABLE`" textWrap=`"TOP_AND_BOTTOM`" textFlow=`"BOTH_SIDES`" lock=`"0`" dropcapstyle=`"None`" pageBreak=`"CELL`" repeatHeader=`"$([int]$opt.head)`" rowCnt=`"$nr`" colCnt=`"$nc`" cellSpacing=`"0`" borderFillIDRef=`"$($BF.none)`" noAdjust=`"0`"><hp:sz width=`"$W`" widthRelTo=`"ABSOLUTE`" height=`"$($nr * 1200)`" heightRelTo=`"ABSOLUTE`" protect=`"0`"/><hp:pos treatAsChar=`"0`" affectLSpacing=`"0`" flowWithText=`"1`" allowOverlap=`"0`" holdAnchorAndSO=`"0`" vertRelTo=`"PARA`" horzRelTo=`"COLUMN`" vertAlign=`"TOP`" horzAlign=`"LEFT`" vertOffset=`"0`" horzOffset=`"0`"/><hp:outMargin left=`"0`" right=`"0`" top=`"120`" bottom=`"$(if($opt.after){$opt.after}else{420})`"/><hp:inMargin left=`"340`" right=`"340`" top=`"150`" bottom=`"150`"/>"
+  $x = "<hp:tbl id=`"$script:objId`" zOrder=`"0`" numberingType=`"TABLE`" textWrap=`"TOP_AND_BOTTOM`" textFlow=`"BOTH_SIDES`" lock=`"0`" dropcapstyle=`"None`" pageBreak=`"$(if($opt.noSplit){'NONE'}else{'CELL'})`" repeatHeader=`"$([int]$opt.head)`" rowCnt=`"$nr`" colCnt=`"$nc`" cellSpacing=`"0`" borderFillIDRef=`"$($BF.none)`" noAdjust=`"0`"><hp:sz width=`"$W`" widthRelTo=`"ABSOLUTE`" height=`"$($nr * 1200)`" heightRelTo=`"ABSOLUTE`" protect=`"0`"/><hp:pos treatAsChar=`"$(if($opt.inline){1}else{0})`" affectLSpacing=`"0`" flowWithText=`"1`" allowOverlap=`"0`" holdAnchorAndSO=`"0`" vertRelTo=`"PARA`" horzRelTo=`"COLUMN`" vertAlign=`"TOP`" horzAlign=`"LEFT`" vertOffset=`"0`" horzOffset=`"0`"/><hp:outMargin left=`"0`" right=`"0`" top=`"120`" bottom=`"$(if($opt.after){$opt.after}else{420})`"/><hp:inMargin left=`"340`" right=`"340`" top=`"150`" bottom=`"150`"/>"
   for($r = 0; $r -lt $nr; $r++){
     $isHead = ($opt.head -and $r -eq 0)
     $x += '<hp:tr>'
@@ -286,7 +292,9 @@ function TableXml($rows, $widths, $opt){
       $cm = $(if($opt.pad -ne $null){ $opt.pad } elseif($opt.tight){ 100 } else { 340 })
       $cmV = $(if($opt.pad -ne $null){ $opt.pad } elseif($opt.tight){ 110 } else { 240 })
       $x += "<hp:tc name=`"`" header=`"$(if($isHead){1}else{0})`" hasMargin=`"1`" protect=`"0`" editable=`"0`" dirty=`"0`" borderFillIDRef=`"$cbf`"><hp:subList id=`"`" textDirection=`"HORIZONTAL`" lineWrap=`"BREAK`" vertAlign=`"$(if($opt.vtop){'TOP'}else{'CENTER'})`" linkListIDRef=`"0`" linkListNextIDRef=`"0`" textWidth=`"0`" textHeight=`"0`" hasTextRef=`"0`" hasNumRef=`"0`">"
-      if($cv -is [hashtable] -and $cv.lines){
+      if($cv -is [hashtable] -and $cv.raw){
+        $x += $cv.raw          # 미리 만든 문단들(문항 묶음)
+      } elseif($cv -is [hashtable] -and $cv.lines){
         # 한 칸에 모양이 다른 여러 문단: lines = @(@{ t; c; p }, ...)
         foreach($ln in $cv.lines){
           $lp = $(if($ln.p){ $ln.p } else { 'cell' })
@@ -320,7 +328,7 @@ function ContentTable($head, $rows){
     $first = $false
     ,@(for($c = 0; $c -lt @($r).Count; $c++){ if($c -eq 0){ @{ t = @($r)[$c]; c = 'cellB' } } else { [string]@($r)[$c] } })
   }
-  Table @($rowsX) (AutoWidths $all $CW) @{ head = [bool]$head }
+  Table @($rowsX) (AutoWidths $all $TW) @{ head = [bool]$head; inline = 1 }
 }
 
 # ---------- 그림 ----------
@@ -342,7 +350,7 @@ function PicXml($path, $maxW){
   $w = [int][math]::Min($maxW, $ow * 0.5)
   $h = [int]($oh * $w / $ow)
   # 단 높이보다 긴 그림은 한글이 쪽을 나누지 못해 멈추므로 줄임
-  $maxH = [int](($PH - $MT - $MB - $MH - $MF) * 0.8)
+  $maxH = [int](($PH - $MT - $MB - $MH - $MF) * $(if($null -ne $script:cap){ 0.5 } else { 0.8 }))   # 문항 묶음 안에서는 단 높이의 절반까지
   if($h -gt $maxH){ $w = [int]($w * $maxH / $h); $h = $maxH }
   $script:objId++
   $sx = '{0:0.######}' -f ($w / $ow); $sy = '{0:0.######}' -f ($h / $oh)
@@ -352,6 +360,14 @@ function PicXml($path, $maxW){
 
 # ---------- 기출 ----------
 function ExamName($it){ ($it.exam -replace '학년도 ', ' ' -replace '대학수학능력시험', '수능') + " $($it.no)번" }
+# 한 덩어리를 나눌 수 없는 한 칸짜리 표로 묶음: 단·쪽 끝에 들어가지 않으면 통째로 다음 단으로 넘어감
+# (평가원 시험지처럼 한 문항은 반드시 한 단 안에)
+function KeepTogether([scriptblock]$block){
+  $script:cap = New-Object Text.StringBuilder
+  & $block
+  $raw = $script:cap.ToString(); $script:cap = $null
+  Table @(,@(@{ raw = $raw; bf = $BF.none })) @($CW) @{ pad = 0; after = 600; noSplit = 1; vtop = 1; inline = 1 } 'gap'
+}
 # 수능 시험지 모양: 굵은 번호 + 발문 [3점] / <보기>는 테두리 상자 맨 위 가운데에 '< 보 기 >' / 선택지는 ①~⑤ 한 줄씩
 function ItemXml($key, $num){
   $it = Prop $B.items $key
@@ -367,7 +383,7 @@ function ItemXml($key, $num){
     $label = (($label.ToCharArray()) -join ' ')               # '보기' → '보 기'
     $bodyT = $(if($m.Success){ ([string]$it.bogi).Substring($m.Length) } else { [string]$it.bogi })
     $cell = @{ lines = @(@{ t = "< $label >"; c = 'q'; p = 'bogiL' }, @{ t = $bodyT; c = 'q'; p = 'bogiT' }); bf = $BF.bogiCell }
-    Table @(,@($cell)) @($CW - 200) @{ pad = 420; after = 300 } 'bogiWrap'
+    Table @(,@($cell)) @($CW - 200) @{ pad = 420; after = 300; inline = 1 } 'bogiWrap'
   }
   if($it.fig -and $it.fig.m -eq 'ch'){ foreach($ff in ($it.fig.f -split ' ')){ Picture $ff ($CW - 400) } }
   else { $ch = @($it.choices); for($n = 1; $n -le 5; $n++){ P ("$($CIRCLED[$n]) " + $(if($ch.Count -ge $n){ $ch[$n - 1] } else { '' })) 'choice' 'q' } }
@@ -479,28 +495,27 @@ foreach($pn in $partNames){
     # 장 첫 쪽: 짙은 띠 + 이 장의 개념 목록(단계·쪽 번호) → 바로 본문(1단)
     $chNum = $chNoOf[$ch.id]
     CtrlPara ((ColCtrl 1) + (HeaderCtrl 'ᄉᆡ미 기픈 믈' $ch.chapter)) -Break
-    CtrlPara (ColCtrl 2)   # 2단은 따로 둔 문단에서 시작해야 한글이 제대로 적용함
     # 띠(표) 안 글은 한글의 쪽 글 읽기에 잡히지 않으므로 띠 아래 제목 줄로 쪽을 찾음
     Mark "ch:$($ch.id)" "이 장의 개념 · $($ch.chapter)"
     # 띠는 한 칸짜리 표로(문단 테두리로 칠하면 줄 사이에 틈이 보임)
     $bandLines = @(@{ t = ("CHAPTER {0:00}" -f $chNum); c = 'chNo'; p = 'bandP' }, @{ t = $ch.chapter; c = 'chT'; p = 'bandT' })
     if($ch.intro){ $bandLines += @{ t = $ch.intro; c = 'chIn'; p = 'bandP' } }
-    Table @(,@(@{ lines = $bandLines; bf = $BF.navy })) @($CW) @{ pad = 1100; after = 900 }
+    Table @(,@(@{ lines = $bandLines; bf = $BF.navy })) @($TW) @{ pad = 1100; after = 900; inline = 1 }
     Emit ((Rn '■  ' 'labelM') + (Rn "이 장의 개념 · $($ch.chapter)" 'label') + (Rn "   $(@($ch.concepts).Count)개" 'small')) 'label'
     $ix = 0
     $iRows = foreach($c in $ch.concepts){ $ix++; $l = LvOf $c; ,@(@{ t = ('{0:00}' -f $ix); c = 'tocNo' }, @{ t = $c.title; c = 'idx' }, @{ t = $LEVELS[$l]; c = "lv$($l + 1)" }, @{ t = (PageOf "c:$($c.id)"); c = 'idxPg'; p = 'cellR' }) }
-    Table @($iRows) @([int]($CW * .07), [int]($CW * .73), [int]($CW * .1), ($CW - [int]($CW * .07) - [int]($CW * .73) - [int]($CW * .1))) @{ rowBF = $BF.tocRow; h = 640; tight = 1 }
+    Table @($iRows) @([int]($TW * .07), [int]($TW * .73), [int]($TW * .1), ($TW - [int]($TW * .07) - [int]($TW * .73) - [int]($TW * .1))) @{ rowBF = $BF.tocRow; h = 640; tight = 1; inline = 1 }
     $ix = 0
     foreach($c in $ch.concepts){
       $ix++
       $clv = LvOf $c
       Mark "c:$($c.id)" (("{0}   {1} {2:00}" -f $LEVELS[$clv], $ch.chapter, $ix) + $c.title)
       # 개념 머리: 단계·번호 한 줄, 큰 제목, 강조색 가는 선
-      P '' 'spacer' 'body'   # 뜬 표 뒤에서는 문단 앞 간격이 무시되므로 빈 줄로 띄움
+      P '' 'spacer' 'body' -Break   # 한 개념은 새 쪽에서 시작해 그 개념만으로 쪽을 채움
       Emit ((Rn "$($LEVELS[$clv])" "lv$($clv + 1)") + (Rn ("   {0} {1:00}" -f $ch.chapter, $ix) 'small')) 'conTag'
       Emit (Runs $c.title 'conT') 'conT'
       # 제목 아래 강조색 선: 문단 한쪽 테두리는 한글이 그리지 않아 얇은 한 칸 표로 그림
-      Table @(,@(@{ t = ''; c = 'tiny'; bf = $BF.conLine })) @($CW) @{ pad = 0; h = 120; after = 500 }
+      Table @(,@(@{ t = ''; c = 'tiny'; bf = $BF.conLine })) @($TW) @{ pad = 0; h = 120; after = 500; inline = 1 }
       P $c.summary 'sum' 'sum'
       foreach($bl in @($c.body)){
         if($null -ne (Prop $bl 'p')){ P $bl.p 'body' 'body' }
@@ -512,7 +527,7 @@ foreach($pn in $partNames){
       if(@($c.examples).Count){
         Emit ((Rn '■  ' 'labelM') + (Rn '예문' 'label')) 'label'
         $exRows = foreach($e in @($c.examples)){ ,@(@{ t = $e.ex; c = 'exE' }, @{ t = [string]$e.note; c = 'exN' }) }
-        Table @($exRows) @([int]($CW * .38), ($CW - [int]($CW * .38))) @{ vtop = 1 }
+        Table @($exRows) @([int]($TW * .38), ($TW - [int]($TW * .38))) @{ vtop = 1; inline = 1 }
       }
       if(@($c.traps).Count){
         Emit ((Rn '■  ' 'labelM') + (Rn '자주 틀리는 점' 'label')) 'label'
@@ -547,11 +562,14 @@ foreach($pn in $partNames){
         $key = $chItems[$n - 1]; $it = Prop $B.items $key
         if($it.pkey -and -not $shownP[$it.pkey]){
           $shownP[$it.pkey] = 1
-          $ptxt = (Prop $B.passages $it.pkey).text
-          Emit ((Rn "[$($it.range)] " 'qB') + (Rn '다음 글을 읽고 물음에 답하시오.' 'q') + (Rn "   $($it.exam -replace '학년도 ', ' ' -replace '대학수학능력시험', '수능')" 'small')) 'src'
-          foreach($ln2 in ([string]$ptxt -split "`n")){ if($ln2.Trim()){ P $ln2 'passage' 'q' } }
+          $ptxt = [string](Prop $B.passages $it.pkey).text
+          $pHead = (Rn "[$($it.range)] " 'qB') + (Rn '다음 글을 읽고 물음에 답하시오.' 'q') + (Rn "   $($it.exam -replace '학년도 ', ' ' -replace '대학수학능력시험', '수능')" 'small')
+          $pLines = @($ptxt -split "`n" | Where-Object { $_.Trim() })
+          # 한 단에 넉넉히 들어가는 지문(1,300자 이하)은 통째로, 긴 독서·문학 지문만 단을 넘김
+          if($ptxt.Length -le 1300){ KeepTogether { Emit $pHead 'src'; foreach($ln2 in $pLines){ P $ln2 'passage' 'q' } } }
+          else { Emit $pHead 'src'; foreach($ln2 in $pLines){ P $ln2 'passage' 'q' } }
         }
-        ItemXml $key $n
+        KeepTogether { ItemXml $key $n }
         [void]$answers.Add(@{ ch = $ch.chapter; n = $n; key = $key })
       }
     }
