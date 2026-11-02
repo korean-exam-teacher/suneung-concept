@@ -143,6 +143,8 @@ AddBF 'bogi' $all4 $null
 AddBF 'rule' @{ top=@('SOLID', '0.4 mm', '#000000') } $null
 AddBF 'bogiCell' $all4 $null
 AddBF 'tocRow' @{ bottom=@('SOLID', '0.1 mm', '#BBBBBB') } $null
+$dash = @('DASH', '0.12 mm', '#000000')
+AddBF 'view' @{ left=@('SOLID', '0.7 mm', '#000000'); right=$dash; top=$dash; bottom=$dash } $null   # '이런 관점도 있어요': 왼쪽 굵은 선 + 점선 상자
 for($k = 0; $k -lt 4; $k++){
   AddBF "lvFill$k" $null $LV[$k]
   AddBF "lvTint$k" $null $LVT[$k]
@@ -534,6 +536,12 @@ foreach($pn in $partNames){
         elseif($null -ne (Prop $bl 'list')){ foreach($li in @($bl.list)){ P ('•  ' + $li) 'list' 'body' } }
         elseif($null -ne (Prop $bl 'table')){ ContentTable (Prop $bl.table 'head') $bl.table.rows }
         elseif($null -ne (Prop $bl 'box')){ if($bl.title){ P ('**' + $bl.title + '**   ' + $bl.box) 'box' 'body' } else { P $bl.box 'box' 'body' } }
+        elseif($null -ne (Prop $bl 'view')){
+          # 전공서 관점이 학교 문법과 다를 때: 점선 상자에 따로 보여 줌
+          $vLines = @(@{ t = ('이런 관점도 있어요' + $(if($bl.title){ " · $($bl.title)" } else { '' })); c = 'smallB'; p = 'cell' }, @{ t = $bl.view; c = 'body'; p = 'cell' })
+          if($bl.src){ $vLines += @{ t = $bl.src; c = 'small'; p = 'cellR' } }
+          Table @(,@(@{ lines = $vLines; bf = $BF.view })) @($TW) @{ pad = 500; after = 400; inline = 1 }
+        }
       }
       if(@($c.examples).Count){
         Emit ((Rn '■  ' 'labelM') + (Rn '예문' 'label')) 'label'

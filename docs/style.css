@@ -216,6 +216,9 @@ td:first-child{font-weight:600;color:var(--ink)}
 @container (max-width:520px){ th,td{padding:9px 11px;font-size:.85rem} }
 .box{margin:20px 0;padding:18px 22px;border-radius:var(--r);background:var(--blue-soft);color:var(--ink);white-space:pre-line}
 .box .bt{display:block;font-size:.8rem;font-weight:700;color:var(--blue-ink);margin-bottom:4px}
+.view{margin:20px 0;padding:16px 22px 16px 20px;border-radius:var(--r);border:1px dashed var(--lv4);border-left:4px solid var(--lv4);background:color-mix(in srgb,var(--lv4) 7%,transparent);color:var(--ink);white-space:pre-line}
+.view .vt{display:block;font-size:.8rem;font-weight:700;color:var(--lv4);margin-bottom:4px}
+.view .vs{display:block;margin-top:8px;font-size:.75rem;color:var(--ink-3)}
 
 /* 오른쪽 기둥 — 예문·함정 */
 .rail-card{padding:clamp(18px,1.6vw,24px);border-radius:var(--r-lg);background:var(--paper);box-shadow:var(--shadow);margin-bottom:14px}

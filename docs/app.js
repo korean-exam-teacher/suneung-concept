@@ -333,10 +333,16 @@ function tableHtml(t){
 /* 본문을 '핵심'(표·정리 상자)과 '설명'(문단·목록)으로 나눔. 소제목은 따라가는 쪽에 붙임 */
 function splitBody(body){
   const core = [], more = [];
-  let head = null, headInCore = false, headInMore = false;
+  let head = null, headInCore = false, headInMore = false, lastCore = true;
   (body || []).forEach(b => {
     if(b.h != null){ head = b.h; headInCore = headInMore = false; return; }
+    // '이런 관점도 있어요'는 바로 앞 내용과 같은 칸에 붙임
+    if(b.view != null){
+      (lastCore ? core : more).push(`<aside class="view"><span class="vt">이런 관점도 있어요${b.title ? ` · ${rich(b.title)}` : ''}</span>${rich(b.view)}${b.src ? `<span class="vs">${esc(b.src)}</span>` : ''}</aside>`);
+      return;
+    }
     const isCore = !!(b.table || b.box != null);
+    lastCore = isCore;
     const out = isCore ? core : more;
     if(head && !(isCore ? headInCore : headInMore)){ out.push(`<h3>${rich(head)}</h3>`); if(isCore) headInCore = true; else headInMore = true; }
     if(b.table) out.push(tableHtml(b.table));
