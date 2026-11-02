@@ -97,9 +97,28 @@ foreach($ch in $chapters){
 Write-Host "연결한 기출 문항 $($used.Count)개"
 
 # ---------- 4. 기출 자료 묶기 ----------
-$itemIndex = @{}; foreach($p in $pool){ $itemIndex[$p.key] = $p.it }
+$itemIndex = @{}; $setOf = @{}
+foreach($p in $pool){
+  $itemIndex[$p.key] = $p.it
+  if($p.it.지문범위 -ne '(독립 문항)'){
+    $sk = "{0}||{1}||{2}" -f $p.it.exam_id, $p.it.영역, $p.it.지문범위
+    if(-not $setOf[$sk]){ $setOf[$sk] = New-Object System.Collections.ArrayList }
+    [void]$setOf[$sk].Add($p.key)
+  }
+}
+# 독서 지문은 한 문항만 골랐더라도 그 지문에 딸린 문항을 모두 실음(지문 없이 문항만 실리지 않게)
+$FULLSET = @('독서', '독서와 작문')
+$keys = New-Object System.Collections.ArrayList
+foreach($key in $used.Keys){ [void]$keys.Add($key) }
+foreach($key in $used.Keys){
+  $it = $itemIndex[$key]
+  if($it -and $it.지문범위 -ne '(독립 문항)' -and $FULLSET -contains $it.영역){
+    foreach($sib in $setOf["{0}||{1}||{2}" -f $it.exam_id, $it.영역, $it.지문범위]){ if(-not $keys.Contains($sib)){ [void]$keys.Add($sib) } }
+  }
+}
+Write-Host "독서 지문 문항을 채워 넣어 기출 문항 $($keys.Count)개"
 $outItems = [ordered]@{}; $outPass = [ordered]@{}; $figFiles = @{}
-foreach($key in ($used.Keys | Sort-Object)){
+foreach($key in ($keys | Sort-Object)){
   $it = $itemIndex[$key]
   if(-not $it){ Write-Warning "문항 없음: $key"; continue }
   $pkey = $null
@@ -108,7 +127,9 @@ foreach($key in ($used.Keys | Sort-Object)){
     if(-not $outPass.Contains($pkey)){
       $pf = Prop $FIGS.p $pkey
       if($pf){ foreach($ff in ($pf.f -split ' ')){ $figFiles[$ff] = 1 } }
-      $outPass[$pkey] = [ordered]@{ text = (Prop $PASSAGES $pkey); fig = $(if($pf){ $pf.f } else { $null }) }
+      # items: 지문에 딸린 문항 전체(문항 번호 순), full: 책에 모두 싣는 지문인지
+      $sibs = @($setOf[$pkey] | Sort-Object { $no = 0; [void][int]::TryParse(($_ -split '\|\|')[2], [ref]$no); $no })
+      $outPass[$pkey] = [ordered]@{ text = (Prop $PASSAGES $pkey); fig = $(if($pf){ $pf.f } else { $null }); items = $sibs; full = ($FULLSET -contains $it.영역) }
     }
   }
   $fi = Prop $FIGS.i $key

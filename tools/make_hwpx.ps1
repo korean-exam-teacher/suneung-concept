@@ -491,7 +491,18 @@ foreach($pn in $partNames){
   $cn = 0
   foreach($ch in $pchs){
     $cn++
+    # 이 장의 기출 번호 순서: 지문이 있는 문항은 지문별로 모아 문항 번호 순으로 이어 붙임
+    # (독서 지문은 딸린 문항 전부, 다른 지문은 이 장에서 고른 문항만)
     $chItems = New-Object System.Collections.ArrayList
+    $chRefs = @($ch.concepts | ForEach-Object { @($_.kichul) } | Where-Object { Prop $B.items $_ })
+    foreach($k in $chRefs){
+      if($chItems.Contains($k)){ continue }
+      $pk = (Prop $B.items $k).pkey
+      if(-not $pk){ [void]$chItems.Add($k); continue }
+      $ps = Prop $B.passages $pk
+      foreach($sib in @($ps.items)){ if(($ps.full -or $chRefs -contains $sib) -and (Prop $B.items $sib) -and -not $chItems.Contains($sib)){ [void]$chItems.Add($sib) } }
+      if(-not $chItems.Contains($k)){ [void]$chItems.Add($k) }
+    }
     # 장 첫 쪽: 짙은 띠 + 이 장의 개념 목록(단계·쪽 번호) → 바로 본문(1단)
     $chNum = $chNoOf[$ch.id]
     CtrlPara ((ColCtrl 1) + (HeaderCtrl 'ᄉᆡ미 기픈 믈' $ch.chapter)) -Break
@@ -553,20 +564,30 @@ foreach($pn in $partNames){
     }
     # 장 끝: 기출 풀어 보기 (2단, 시험지처럼)
     if($chItems.Count -and -not $Lite){
-      CtrlPara ((ColCtrl 1) + (HeaderCtrl 'ᄉᆡ미 기픈 믈' "$($ch.chapter) · 기출 풀어 보기")) -Break
+      CtrlPara ((ColCtrl 1) + (HeaderCtrl 'ᄉᆡ미 기픈 믈' "$($ch.chapter) 기출")) -Break
       Mark "kx:$($ch.id)" "$($ch.chapter) — 기출 풀어 보기"
-      SectionTitle "$($ch.chapter) — 기출 풀어 보기" '앞에서 [번호]로 소개한 평가원 기출입니다. 지문이 있는 문항은 지문을 먼저 실었습니다. 정답과 해설은 책 맨 끝에 있습니다.'
+      SectionTitle "$($ch.chapter) — 기출 풀어 보기" '앞에서 [번호]로 소개한 평가원 기출입니다. 지문이 있는 문항은 지문 바로 뒤에 이어 실었고, 독서 지문은 그 지문에 딸린 문항을 모두 실었습니다. 정답과 해설은 책 맨 끝에 있습니다.'
       CtrlPara (ColCtrl 2)
       $shownP = @{}
       for($n = 1; $n -le $chItems.Count; $n++){
         $key = $chItems[$n - 1]; $it = Prop $B.items $key
         if($it.pkey -and -not $shownP[$it.pkey]){
           $shownP[$it.pkey] = 1
-          $ptxt = [string](Prop $B.passages $it.pkey).text
-          $pHead = (Rn "[$($it.range)] " 'qB') + (Rn '다음 글을 읽고 물음에 답하시오.' 'q') + (Rn "   $($it.exam -replace '학년도 ', ' ' -replace '대학수학능력시험', '수능')" 'small')
+          $ps = Prop $B.passages $it.pkey
+          $ptxt = [string]$ps.text
+          # 지문 머리의 번호는 이 책의 번호로: 같은 지문의 문항은 바로 뒤에 이어 실림
+          $m = $n; while($m -lt $chItems.Count -and (Prop $B.items $chItems[$m]).pkey -eq $it.pkey){ $m++ }
+          $rng = $(if($m -gt $n){ "$n~$m" } else { "$n" })
+          $orig = "원래 $($it.range)번"
+          $pHead = (Rn "[$rng] " 'qB') + (Rn '다음 글을 읽고 물음에 답하시오.' 'q') + (Rn "   $($it.exam -replace '학년도 ', ' ' -replace '대학수학능력시험', '수능') · $orig" 'small')
           $pLines = @($ptxt -split "`n" | Where-Object { $_.Trim() })
+          if($ps.fig){
+            # 그림·표가 든 지문은 원본 시험지에서 오린 지문 그림을 그대로 씀
+            Emit $pHead 'src'
+            foreach($ff in ($ps.fig -split ' ')){ Picture $ff $CW }
+          }
           # 한 단에 넉넉히 들어가는 지문(1,300자 이하)은 통째로, 긴 독서·문학 지문만 단을 넘김
-          if($ptxt.Length -le 1300){ KeepTogether { Emit $pHead 'src'; foreach($ln2 in $pLines){ P $ln2 'passage' 'q' } } }
+          elseif($ptxt.Length -le 1300){ KeepTogether { Emit $pHead 'src'; foreach($ln2 in $pLines){ P $ln2 'passage' 'q' } } }
           else { Emit $pHead 'src'; foreach($ln2 in $pLines){ P $ln2 'passage' 'q' } }
         }
         KeepTogether { ItemXml $key $n }
