@@ -431,9 +431,8 @@ P $SITE 'coverT' 'coverF'
 CtrlPara ((ColCtrl 1) + (HeaderCtrl 'ᄉᆡ미 기픈 믈' '차례')) -Break
 Mark 'toc' '차례'
 SectionTitle '차례'
-CtrlPara (ColCtrl 2)
 $chNoOf = @{}; $k = 0; foreach($ch in $B.chapters){ $k++; $chNoOf[$ch.id] = $k }
-$tw4 = @([int]($CW * .07), [int]($CW * .55), [int]($CW * .28)); $tw4 += ($CW - ($tw4 | Measure-Object -Sum).Sum)
+$tw4 = @([int]($TW * .07), [int]($TW * .55), [int]($TW * .28)); $tw4 += ($TW - ($tw4 | Measure-Object -Sum).Sum)
 foreach($pn in $partNames){
   $pi = [array]::IndexOf($partNames, $pn) + 1
   $rows = @(,@(@{ t = "$pi"; c = 'tocBig' }, @{ t = $pn; c = 'tocP' }, @{ t = $PARTNOTE[$pn]; c = 'tocMeta' }, @{ t = (PageOf "part:$pi"); c = 'tocP'; p = 'cellR' }))
@@ -450,11 +449,10 @@ if(-not $Lite){ Table @(,@(@{ t = ''; c = 'tocP' }, @{ t = '정답과 해설'; c
 # ----- 이 책을 보는 법 + 처음 공부하는 길 -----
 CtrlPara ((ColCtrl 1) + (HeaderCtrl 'ᄉᆡ미 기픈 믈' '이 책을 보는 법')) -Break
 SectionTitle '이 책을 보는 법'
-CtrlPara (ColCtrl 2)
 P '한 개념은 **요약 → 개념 → 예문 → 자주 틀리는 점 → 관련 평가원 기출** 순서로 짜여 있습니다. 개념 제목 위의 색 글자는 학습 단계입니다.' 'body' 'body'
 P '처음에는 각 장에서 **기본** 개념만 훑고, 한 바퀴를 돈 뒤 **심화 → 발전 → 도약** 순서로 다시 올라가면 부담이 적습니다.' 'body' 'body'
 $lvRows = @(,@('단계', '무엇을 배우나', '개념')) + @(for($k = 0; $k -lt 4; $k++){ ,@(@{ t = $LEVELS[$k]; c = "lv$($k + 1)" }, $LVDESC[$k], "$(@($allConcepts | Where-Object { (LvOf $_) -eq $k }).Count)개") })
-Table $lvRows @([int]($CW * .14), [int]($CW * .72), ($CW - [int]($CW * .14) - [int]($CW * .72))) @{ head = 1 }
+Table $lvRows @([int]($TW * .14), [int]($TW * .72), ($TW - [int]($TW * .14) - [int]($TW * .72))) @{ head = 1 }
 if($Lite){ P '가벼운판에는 기출의 출처·발문·정답만 실었습니다. 지문·선택지·해설은 웹 사이트에서 바로 풀고 채점할 수 있습니다.' 'body' 'body' }
 else { P '관련 기출 문제는 장마다 끝의 **기출 풀어 보기**에 모았고, 정답과 해설은 책 맨 끝에 있습니다.' 'body' 'body' }
 P '**2028학년도 수능**부터 국어는 선택 과목 없이 화법과 언어(1~10번), 독서와 작문(11~30번), 문학(31~45번)의 45문항을 모두 풉니다.' 'box' 'body'
@@ -467,8 +465,10 @@ $bRows = for($j = 0; $j -lt $half; $j++){
   ,@(@{ t = $a.title; c = 'idx' }, @{ t = (PageOf "c:$($a.id)"); c = 'idxPg'; p = 'cellR' }, '',
      @{ t = $(if($b2){ $b2.title } else { '' }); c = 'idx' }, @{ t = $(if($b2){ PageOf "c:$($b2.id)" } else { '' }); c = 'idxPg'; p = 'cellR' })
 }
-$bw = [int](($CW - 1400) / 2)
-Table @($bRows) @(($bw - 1300), 1300, 1400, ($bw - 1300), ($CW - 2 * $bw - 1400 + 1300)) @{ rowBF = $BF.tocRow; h = 600; tight = 1 }
+$bw = [int](($TW - 1400) / 2)
+# 쪽 번호 칸은 세 자리(예: 103)가 한 줄에 들어가도록 넉넉히
+$pgW = 3000
+Table @($bRows) @(($bw - $pgW), $pgW, 1400, ($bw - $pgW), ($TW - 2 * $bw - 1400 + $pgW)) @{ rowBF = $BF.tocRow; h = 600; tight = 1 }
 
 # ----- 영역과 장 -----
 $answers = New-Object System.Collections.ArrayList
