@@ -139,5 +139,5 @@ Copy-Item "$Bank\fonts\*.woff" "$Root\docs\fonts\" -Force
 Write-Host "docs\data.js, book\book.json 저장 / 그림 $($figFiles.Count)개 복사"
 
 # ---------- 6. 한글(HWPX) 책 ----------
-& "$PSScriptRoot\make_hwpx.ps1"
-& "$PSScriptRoot\make_hwpx.ps1" -Lite -Out "$Root\book\수능국어_개념서_가벼운판.hwpx"
+# 전체판·가벼운판을 만들고 한글로 열어 차례 쪽 번호를 채움(한글이 깔려 있어야 함)
+& "$PSScriptRoot\make_book.ps1"
